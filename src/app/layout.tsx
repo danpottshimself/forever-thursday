@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
+import NewsletterBanner from '@/components/NewsletterBanner'
 import { CartProvider } from '@/contexts/CartContext'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -35,6 +36,7 @@ export default function RootLayout({
       </head>
       <body className={`${inter.className} bg-white text-black`}>
         <CartProvider>
+          <NewsletterBanner />
           <Header />
           <main className="min-h-screen">
             {children}
