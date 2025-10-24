@@ -5,12 +5,12 @@ import { useState } from 'react'
 import Image from 'next/image'
 import { Product } from '@/types'
 import { X, Plus, Minus, ShoppingCart, Heart, Star } from 'lucide-react'
+import { useCart } from '@/contexts/CartContext'
 
 interface ProductModalProps {
   product: Product | null
   isOpen: boolean
   onClose: () => void
-  onAddToCart: (productId: string, quantity: number) => void
   favorites: Set<string>
   onToggleFavorite: (productId: string) => void
 }
@@ -19,16 +19,16 @@ export default function ProductModal({
   product, 
   isOpen, 
   onClose, 
-  onAddToCart, 
   favorites, 
   onToggleFavorite 
 }: ProductModalProps) {
+  const { addToCart } = useCart()
   const [quantity, setQuantity] = useState(1)
 
   if (!product) return null
 
   const handleAddToCart = () => {
-    onAddToCart(product.id, quantity)
+    addToCart(product, quantity)
     onClose()
     setQuantity(1) // Reset quantity
   }

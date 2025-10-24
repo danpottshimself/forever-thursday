@@ -29,7 +29,7 @@ Message:
 ${formData.message}
       `)
       
-      const mailtoLink = `mailto:danpottshimself@gmail.com?subject=${subject}&body=${body}`
+      const mailtoLink = `mailto:contact.foreverfebruary@gmail.com?subject=${subject}&body=${body}`
       window.open(mailtoLink)
       
       setSubmitStatus('success')
@@ -191,10 +191,10 @@ ${formData.message}
               <p className="text-gray-600 sketchy-font-alt">
                 Or email us directly at:{' '}
                 <a 
-                  href="mailto:danpottshimself@gmail.com" 
+                  href="mailto:contact.foreverfebruary@gmail.com" 
                   className="text-black hover:underline font-bold"
                 >
-                  danpottshimself@gmail.com
+                  contact.foreverfebruary@gmail.com
                 </a>
               </p>
             </div>

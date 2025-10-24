@@ -11,7 +11,6 @@ import { Product } from '@/types'
 export default function ProductsPage() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [cart, setCart] = useState<{ [key: string]: number }>({})
   const [favorites, setFavorites] = useState<Set<string>>(new Set())
 
   const openModal = (product: Product) => {
@@ -22,13 +21,6 @@ export default function ProductsPage() {
   const closeModal = () => {
     setIsModalOpen(false)
     setSelectedProduct(null)
-  }
-
-  const addToCart = (productId: string, quantity: number) => {
-    setCart(prev => ({
-      ...prev,
-      [productId]: (prev[productId] || 0) + quantity
-    }))
   }
 
   const toggleFavorite = (productId: string) => {
@@ -196,7 +188,6 @@ export default function ProductsPage() {
         product={selectedProduct}
         isOpen={isModalOpen}
         onClose={closeModal}
-        onAddToCart={addToCart}
         favorites={favorites}
         onToggleFavorite={toggleFavorite}
       />

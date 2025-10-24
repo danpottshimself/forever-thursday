@@ -5,24 +5,22 @@ import { useState } from 'react'
 import Image from 'next/image'
 import { Product } from '@/types'
 import { ShoppingCart, Heart, Star } from 'lucide-react'
+import { useCart } from '@/contexts/CartContext'
 
 interface ProductBannerProps {
   products: Product[]
 }
 
 export default function ProductBanner({ products }: ProductBannerProps) {
-  const [cart, setCart] = useState<{ [key: string]: number }>({})
+  const { addToCart } = useCart()
   const [favorites, setFavorites] = useState<Set<string>>(new Set())
   const [showSuccess, setShowSuccess] = useState<string | null>(null)
 
-  const addToCart = (productId: string) => {
-    setCart(prev => ({
-      ...prev,
-      [productId]: (prev[productId] || 0) + 1
-    }))
+  const handleAddToCart = (product: Product) => {
+    addToCart(product)
     
     // Show success message
-    setShowSuccess(productId)
+    setShowSuccess(product.id)
     setTimeout(() => setShowSuccess(null), 2000)
   }
 
@@ -37,8 +35,6 @@ export default function ProductBanner({ products }: ProductBannerProps) {
       return newFavorites
     })
   }
-
-  const cartCount = Object.values(cart).reduce((sum, count) => sum + count, 0)
 
   return (
     <section className="py-16 px-4 bg-gradient-to-br from-white to-gray-50">
@@ -67,20 +63,6 @@ export default function ProductBanner({ products }: ProductBannerProps) {
             Add to cart • <span className="text-black">Express your emo soul</span>
           </p>
         </motion.div>
-
-        {/* Cart Counter */}
-        {cartCount > 0 && (
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            className="fixed top-20 right-4 z-50"
-          >
-            <div className="bg-black text-white px-4 py-2 rounded-full font-bold sketchy-font-alt flex items-center gap-2">
-              <ShoppingCart size={20} />
-              {cartCount} items
-            </div>
-          </motion.div>
-        )}
 
         {/* Products Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -145,7 +127,7 @@ export default function ProductBanner({ products }: ProductBannerProps) {
 
                   {/* Add to Cart Button */}
                   <button
-                    onClick={() => addToCart(product.id)}
+                    onClick={() => handleAddToCart(product)}
                     className={`w-full font-bold py-3 rounded-lg transition-all duration-300 sketchy-font-alt flex items-center justify-center gap-2 ${
                       showSuccess === product.id 
                         ? 'bg-green-600 text-white' 
@@ -154,11 +136,6 @@ export default function ProductBanner({ products }: ProductBannerProps) {
                   >
                     <ShoppingCart size={18} />
                     {showSuccess === product.id ? 'ADDED!' : 'ADD TO CART'}
-                    {cart[product.id] && (
-                      <span className="bg-white text-black px-2 py-1 rounded-full text-xs">
-                        {cart[product.id]}
-                      </span>
-                    )}
                   </button>
                 </div>
               </div>
