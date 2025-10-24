@@ -55,7 +55,7 @@ export default function ProductModal({
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.8, opacity: 0 }}
-            className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+            className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Close Button */}
@@ -100,17 +100,17 @@ export default function ProductModal({
               </div>
 
               {/* Product Info */}
-              <div className="p-8">
-                <div className="mb-6">
-                  <h2 className="text-3xl font-bold text-black mb-2 sketchy-font-alt">
+              <div className="p-8 lg:p-10">
+                <div className="mb-8">
+                  <h2 className="text-3xl lg:text-4xl font-bold text-black mb-3 sketchy-font-alt">
                     {product.name}
                   </h2>
-                  <p className="text-gray-600 text-lg sketchy-font-alt mb-4">
+                  <p className="text-gray-600 text-lg lg:text-xl sketchy-font-alt mb-6">
                     {product.description}
                   </p>
                   
-                  <div className="flex items-center justify-between mb-6">
-                    <span className="text-3xl font-bold text-black sketchy-font">
+                  <div className="flex items-center justify-between mb-8">
+                    <span className="text-3xl lg:text-4xl font-bold text-black sketchy-font">
                       ${product.price}
                     </span>
                     <span className="text-sm text-gray-500 uppercase tracking-wide bg-gray-100 px-3 py-1 rounded">
@@ -144,13 +144,13 @@ export default function ProductModal({
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex gap-3">
+                <div className="flex flex-col sm:flex-row gap-3">
                   <button
                     onClick={handleAddToCart}
-                    className="flex-1 bg-black text-white font-bold py-4 rounded-lg hover:bg-gray-800 transition-all duration-300 sketchy-font-alt flex items-center justify-center gap-3 text-lg"
+                    className="flex-1 bg-black text-white font-bold py-4 px-4 rounded-lg hover:bg-gray-800 transition-all duration-300 sketchy-font-alt flex items-center justify-center gap-2 text-base whitespace-nowrap"
                   >
-                    <ShoppingCart size={24} />
-                    ADD {quantity} TO CART
+                    <ShoppingCart size={20} />
+                    <span>ADD {quantity} TO CART</span>
                   </button>
                   <button
                     onClick={() => {
@@ -160,10 +160,10 @@ export default function ProductModal({
                         window.location.href = '/cart'
                       }, 500)
                     }}
-                    className="flex-1 bg-gray-800 text-white font-bold py-4 rounded-lg hover:bg-gray-700 transition-all duration-300 sketchy-font-alt flex items-center justify-center gap-3 text-lg"
+                    className="flex-1 bg-gray-800 text-white font-bold py-4 px-4 rounded-lg hover:bg-gray-700 transition-all duration-300 sketchy-font-alt flex items-center justify-center gap-2 text-base whitespace-nowrap"
                   >
-                    <ShoppingCart size={24} />
-                    BUY NOW - ${(product.price * quantity).toFixed(2)}
+                    <ShoppingCart size={20} />
+                    <span>BUY NOW - ${(product.price * quantity).toFixed(2)}</span>
                   </button>
                 </div>
 
