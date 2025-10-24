@@ -77,7 +77,7 @@ export default function Header() {
         </div>
 
         {/* Mobile Layout */}
-        <div className={`md:hidden flex items-center justify-between ${isMobileMenuOpen ? 'opacity-0 pointer-events-none' : ''}`}>
+        <div className="md:hidden flex items-center justify-between">
           {/* Mobile Menu Button - Left */}
           <div className="flex items-center">
             <motion.button
@@ -86,7 +86,7 @@ export default function Header() {
               onClick={toggleMobileMenu}
               className="p-2 text-black hover:bg-gray-100 rounded-lg transition-colors duration-300"
             >
-              {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+              <Menu size={24} />
             </motion.button>
           </div>
 
@@ -133,73 +133,40 @@ export default function Header() {
           </div>
         </div>
 
-        {/* Mobile Menu Overlay */}
+        {/* Mobile Menu Dropdown */}
         <AnimatePresence>
           {isMobileMenuOpen && (
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden"
-              onClick={closeMobileMenu}
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="md:hidden overflow-hidden border-t border-gray-200"
             >
-              <motion.div
-                initial={{ x: '-100%' }}
-                animate={{ x: 0 }}
-                exit={{ x: '-100%' }}
-                transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                className="absolute left-0 top-0 h-full w-80 bg-white shadow-xl"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div className="p-6">
-                  {/* Close Button */}
-                  <div className="flex justify-end mb-8">
-                    <button
-                      onClick={closeMobileMenu}
-                      className="p-2 text-black hover:bg-gray-100 rounded-lg transition-colors duration-300"
-                    >
-                      <X size={24} />
-                    </button>
-                  </div>
-
-                  {/* Navigation */}
-                  <nav className="flex flex-col space-y-6">
-                    <Link 
-                      href="/products" 
-                      onClick={closeMobileMenu}
-                      className="text-gray-700 hover:text-black transition-colors duration-300 sketchy-font-alt text-lg py-3 border-b border-gray-200"
-                    >
-                      PRODUCTS
-                    </Link>
-                    <Link 
-                      href="/about" 
-                      onClick={closeMobileMenu}
-                      className="text-gray-700 hover:text-black transition-colors duration-300 sketchy-font-alt text-lg py-3 border-b border-gray-200"
-                    >
-                      ABOUT
-                    </Link>
-                    <Link 
-                      href="/contact" 
-                      onClick={closeMobileMenu}
-                      className="text-gray-700 hover:text-black transition-colors duration-300 sketchy-font-alt text-lg py-3 border-b border-gray-200"
-                    >
-                      CONTACT
-                    </Link>
-                  </nav>
-
-                  {/* Logo at bottom */}
-                  <div className="absolute bottom-6 left-6">
-                    <Image
-                      src="/logo-forever-february.svg"
-                      alt="Forever February"
-                      width={120}
-                      height={60}
-                      className="h-8 w-auto object-contain opacity-50"
-                      style={{ aspectRatio: '2/1' }}
-                    />
-                  </div>
-                </div>
-              </motion.div>
+              <div className="py-4">
+                <nav className="flex flex-col space-y-4">
+                  <Link 
+                    href="/products" 
+                    onClick={closeMobileMenu}
+                    className="text-gray-700 hover:text-black transition-colors duration-300 sketchy-font-alt text-center py-3 hover:bg-gray-50 rounded-lg"
+                  >
+                    PRODUCTS
+                  </Link>
+                  <Link 
+                    href="/about" 
+                    onClick={closeMobileMenu}
+                    className="text-gray-700 hover:text-black transition-colors duration-300 sketchy-font-alt text-center py-3 hover:bg-gray-50 rounded-lg"
+                  >
+                    ABOUT
+                  </Link>
+                  <Link 
+                    href="/contact" 
+                    onClick={closeMobileMenu}
+                    className="text-gray-700 hover:text-black transition-colors duration-300 sketchy-font-alt text-center py-3 hover:bg-gray-50 rounded-lg"
+                  >
+                    CONTACT
+                  </Link>
+                </nav>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
