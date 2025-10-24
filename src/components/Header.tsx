@@ -21,7 +21,7 @@ export default function Header() {
   }
 
   return (
-    <header className="bg-white/90 backdrop-blur-sm border-b border-gray-300 sticky top-0 z-50">
+    <header className={`bg-white/90 backdrop-blur-sm border-b border-gray-300 sticky top-0 z-50 ${isMobileMenuOpen ? 'md:block hidden' : ''}`}>
       <div className="max-w-6xl mx-auto px-4 py-4">
         {/* Desktop Layout */}
         <div className="hidden md:flex items-center justify-between">
