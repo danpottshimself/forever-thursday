@@ -19,26 +19,28 @@ export default function ContactPage() {
     setIsSubmitting(true)
     
     try {
-      // Create mailto link with form data
-      const subject = encodeURIComponent(formData.subject || 'Contact from Forever February Website')
-      const body = encodeURIComponent(`
-Name: ${formData.name}
-Email: ${formData.email}
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      })
 
-Message:
-${formData.message}
-      `)
-      
-      const mailtoLink = `mailto:contact.foreverfebruary@gmail.com?subject=${subject}&body=${body}`
-      window.open(mailtoLink)
-      
-      setSubmitStatus('success')
-      setFormData({ name: '', email: '', subject: '', message: '' })
+      const result = await response.json()
+
+      if (response.ok) {
+        setSubmitStatus('success')
+        setFormData({ name: '', email: '', subject: '', message: '' })
+      } else {
+        setSubmitStatus('error')
+      }
     } catch (error) {
+      console.error('Contact form error:', error)
       setSubmitStatus('error')
     } finally {
       setIsSubmitting(false)
-      setTimeout(() => setSubmitStatus(''), 3000)
+      setTimeout(() => setSubmitStatus(''), 5000)
     }
   }
 
@@ -172,7 +174,7 @@ ${formData.message}
                   animate={{ opacity: 1, y: 0 }}
                   className="text-center text-green-600 sketchy-font-alt"
                 >
-                  ✅ Message sent! Your email client should open with the message ready to send.
+                  ✅ Message sent successfully! We'll get back to you soon.
                 </motion.div>
               )}
 
