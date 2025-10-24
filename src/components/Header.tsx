@@ -21,7 +21,7 @@ export default function Header() {
   }
 
   return (
-    <header className={`bg-white/90 backdrop-blur-sm border-b border-gray-300 sticky top-0 z-50 ${isMobileMenuOpen ? 'md:block hidden' : ''}`}>
+    <header className="bg-white/90 backdrop-blur-sm border-b border-gray-300 sticky top-0 z-50">
       <div className="max-w-6xl mx-auto px-4 py-4">
         {/* Desktop Layout */}
         <div className="hidden md:flex items-center justify-between">
@@ -77,7 +77,7 @@ export default function Header() {
         </div>
 
         {/* Mobile Layout */}
-        <div className="md:hidden flex items-center justify-between">
+        <div className={`md:hidden flex items-center justify-between ${isMobileMenuOpen ? 'opacity-0 pointer-events-none' : ''}`}>
           {/* Mobile Menu Button - Left */}
           <div className="flex items-center">
             <motion.button
