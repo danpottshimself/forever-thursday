@@ -125,18 +125,33 @@ export default function ProductBanner({ products }: ProductBannerProps) {
                     </span>
                   </div>
 
-                  {/* Add to Cart Button */}
-                  <button
-                    onClick={() => handleAddToCart(product)}
-                    className={`w-full font-bold py-3 rounded-lg transition-all duration-300 sketchy-font-alt flex items-center justify-center gap-2 ${
-                      showSuccess === product.id 
-                        ? 'bg-green-600 text-white' 
-                        : 'bg-black text-white hover:bg-gray-800'
-                    }`}
-                  >
-                    <ShoppingCart size={18} />
-                    {showSuccess === product.id ? 'ADDED!' : 'ADD TO CART'}
-                  </button>
+                  {/* Action Buttons */}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleAddToCart(product)}
+                      className={`flex-1 font-bold py-3 rounded-lg transition-all duration-300 sketchy-font-alt flex items-center justify-center gap-2 ${
+                        showSuccess === product.id 
+                          ? 'bg-green-600 text-white' 
+                          : 'bg-black text-white hover:bg-gray-800'
+                      }`}
+                    >
+                      <ShoppingCart size={18} />
+                      {showSuccess === product.id ? 'ADDED!' : 'ADD TO CART'}
+                    </button>
+                    <button
+                      onClick={() => {
+                        handleAddToCart(product)
+                        // Redirect to cart page after adding
+                        setTimeout(() => {
+                          window.location.href = '/cart'
+                        }, 500)
+                      }}
+                      className="flex-1 bg-gray-800 text-white font-bold py-3 rounded-lg hover:bg-gray-700 transition-colors duration-300 sketchy-font-alt flex items-center justify-center gap-2"
+                    >
+                      <ShoppingCart size={18} />
+                      BUY NOW
+                    </button>
+                  </div>
                 </div>
               </div>
             </motion.div>

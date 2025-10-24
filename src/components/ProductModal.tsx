@@ -143,14 +143,29 @@ export default function ProductModal({
                   </div>
                 </div>
 
-                {/* Add to Cart Button */}
-                <button
-                  onClick={handleAddToCart}
-                  className="w-full bg-black text-white font-bold py-4 rounded-lg hover:bg-gray-800 transition-all duration-300 sketchy-font-alt flex items-center justify-center gap-3 text-lg"
-                >
-                  <ShoppingCart size={24} />
-                  ADD {quantity} TO CART - ${(product.price * quantity).toFixed(2)}
-                </button>
+                {/* Action Buttons */}
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleAddToCart}
+                    className="flex-1 bg-black text-white font-bold py-4 rounded-lg hover:bg-gray-800 transition-all duration-300 sketchy-font-alt flex items-center justify-center gap-3 text-lg"
+                  >
+                    <ShoppingCart size={24} />
+                    ADD {quantity} TO CART
+                  </button>
+                  <button
+                    onClick={() => {
+                      handleAddToCart()
+                      // Redirect to cart page after adding
+                      setTimeout(() => {
+                        window.location.href = '/cart'
+                      }, 500)
+                    }}
+                    className="flex-1 bg-gray-800 text-white font-bold py-4 rounded-lg hover:bg-gray-700 transition-all duration-300 sketchy-font-alt flex items-center justify-center gap-3 text-lg"
+                  >
+                    <ShoppingCart size={24} />
+                    BUY NOW - ${(product.price * quantity).toFixed(2)}
+                  </button>
+                </div>
 
                 {/* Product Details */}
                 <div className="mt-8 pt-6 border-t border-gray-200">

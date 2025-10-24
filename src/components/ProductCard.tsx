@@ -3,6 +3,8 @@
 import { motion } from 'framer-motion'
 import Image from 'next/image'
 import { Product } from '@/types'
+import { ShoppingCart, Eye } from 'lucide-react'
+import { useCart } from '@/contexts/CartContext'
 
 interface ProductCardProps {
   product: Product
@@ -10,12 +12,23 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product, onClick }: ProductCardProps) {
+  const { addToCart } = useCart()
+
+  const handleBuyNow = (e: React.MouseEvent) => {
+    e.stopPropagation() // Prevent triggering the card click
+    addToCart(product)
+  }
+
+  const handleViewDetails = (e: React.MouseEvent) => {
+    e.stopPropagation() // Prevent triggering the card click
+    onClick?.(product)
+  }
+
   return (
     <motion.div
       whileHover={{ scale: 1.05, y: -5 }}
       whileTap={{ scale: 0.95 }}
-      className="bg-white rounded-lg overflow-hidden border-2 border-gray-300 hover:shadow-lg transition-all duration-300 cursor-pointer"
-      onClick={() => onClick?.(product)}
+      className="bg-white rounded-lg overflow-hidden border-2 border-gray-300 hover:shadow-lg transition-all duration-300"
     >
       <div className="relative h-64 bg-gradient-to-br from-gray-100 to-gray-200">
         <Image
@@ -33,13 +46,28 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
         <h3 className="text-xl font-bold mb-2 text-black sketchy-font-alt">{product.name}</h3>
         <p className="text-gray-600 mb-4 text-sm sketchy-font-alt">{product.description}</p>
         
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-4">
           <span className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-600">
             {product.category.replace('-', ' ')}
           </span>
-          <span className="text-sm text-gray-500 sketchy-font-alt">
-            Click to view details
-          </span>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex gap-2">
+          <button
+            onClick={handleBuyNow}
+            className="flex-1 bg-black text-white font-bold py-2 px-3 rounded-lg hover:bg-gray-800 transition-colors duration-300 sketchy-font-alt flex items-center justify-center gap-2 text-sm"
+          >
+            <ShoppingCart size={16} />
+            BUY NOW
+          </button>
+          <button
+            onClick={handleViewDetails}
+            className="flex-1 bg-gray-200 text-black font-bold py-2 px-3 rounded-lg hover:bg-gray-300 transition-colors duration-300 sketchy-font-alt flex items-center justify-center gap-2 text-sm"
+          >
+            <Eye size={16} />
+            DETAILS
+          </button>
         </div>
       </div>
     </motion.div>
