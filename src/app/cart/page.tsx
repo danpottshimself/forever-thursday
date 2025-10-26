@@ -1,7 +1,6 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useCart } from '@/contexts/CartContext'
@@ -9,17 +8,6 @@ import { ShoppingCart, Plus, Minus, Trash2, ArrowLeft } from 'lucide-react'
 
 export default function CartPage() {
   const { cart, updateQuantity, removeFromCart, clearCart, getCartTotal } = useCart()
-  const [isCheckingOut, setIsCheckingOut] = useState(false)
-
-  const handleCheckout = () => {
-    setIsCheckingOut(true)
-    // Simulate checkout process
-    setTimeout(() => {
-      alert('Checkout functionality would be implemented here!')
-      clearCart()
-      setIsCheckingOut(false)
-    }, 2000)
-  }
 
   if (cart.length === 0) {
     return (
@@ -89,7 +77,7 @@ export default function CartPage() {
               YOUR CART
             </h1>
             <p className="text-xl text-gray-700 sketchy-font-alt">
-              {cart.length} item{cart.length !== 1 ? 's' : ''} ready for checkout
+              {cart.length === 1 ? `${cart.length} item` : `${cart.length} items`} ready for checkout
             </p>
           </motion.div>
         </div>
@@ -218,14 +206,13 @@ export default function CartPage() {
                 <ArrowLeft size={20} />
                 CONTINUE SHOPPING
               </Link>
-              <button
-                onClick={handleCheckout}
-                disabled={isCheckingOut}
-                className="flex-1 bg-white text-black font-bold py-4 rounded-lg hover:bg-gray-100 transition-colors duration-300 sketchy-font-alt disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              <Link
+                href="/checkout"
+                className="flex-1 bg-white text-black font-bold py-4 rounded-lg hover:bg-gray-100 transition-colors duration-300 sketchy-font-alt flex items-center justify-center gap-2"
               >
                 <ShoppingCart size={20} />
-                {isCheckingOut ? 'PROCESSING...' : 'CHECKOUT'}
-              </button>
+                CHECKOUT
+              </Link>
             </div>
           </motion.div>
         </div>
