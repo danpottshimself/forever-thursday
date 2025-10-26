@@ -81,36 +81,39 @@ export async function fetchPrintfulProducts(): Promise<PrintfulProduct[]> {
       return []
     }
 
-    // Transform Printful products to our Product format
-    const products: PrintfulProduct[] = data.result.items
-      .filter(item => item.type === 't-shirt' || item.main_category_id === 5) // Filter for t-shirts
-      .map(item => {
-        // Get the main image
-        const mainImage = item.images?.length > 0 
-          ? item.images[0].url 
-          : '/images/print-placeholder.svg'
-        
-        // Get the lowest priced variant
-        const lowestPriceVariant = item.variants
-          .filter(v => v.availability_status === 'in_stock')
-          .reduce((lowest, current) => 
-            Number.parseFloat(current.retail_price || current.price) < Number.parseFloat(lowest.retail_price || lowest.price) 
-              ? current 
-              : lowest
-          , item.variants[0])
+    console.log('Total Printful products:', data.result.items.length)
+    
+    // Transform ALL Printful products - don't filter
+    const products: PrintfulProduct[] = data.result.items.map(item => {
+      console.log(`Product ${item.id}: type=${item.type}, category=${item.main_category_id}`)
+      
+      // Get the main image
+      const mainImage = item.images?.length > 0 
+        ? item.images[0].url 
+        : '/images/print-placeholder.svg'
+      
+      // Get the lowest priced variant
+      const lowestPriceVariant = item.variants
+        .filter(v => v.availability_status === 'in_stock')
+        .reduce((lowest, current) => 
+          Number.parseFloat(current.retail_price || current.price) < Number.parseFloat(lowest.retail_price || lowest.price) 
+            ? current 
+            : lowest
+        , item.variants[0])
 
-        const price = Number.parseFloat(lowestPriceVariant?.retail_price || lowestPriceVariant?.price || '29.99')
+      const price = Number.parseFloat(lowestPriceVariant?.retail_price || lowestPriceVariant?.price || '29.99')
 
-        return {
-          id: `printful-${item.id}`,
-          name: item.name,
-          description: item.description || 'Custom t-shirt from Forever February',
-          price: price,
-          image: mainImage,
-          category: 'tshirts' as const
-        }
-      })
+      return {
+        id: `printful-${item.id}`,
+        name: item.name,
+        description: item.description || 'Custom t-shirt from Forever February',
+        price: price,
+        image: mainImage,
+        category: 'tshirts' as const
+      }
+    })
 
+    console.log('Transformed Printful products:', products.length)
     return products
   } catch (error) {
     console.error('Error fetching Printful products:', error)

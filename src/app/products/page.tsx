@@ -41,8 +41,10 @@ export default function ProductsPage() {
     const fetchPrintfulProducts = async () => {
       try {
         const response = await fetch('/api/printful')
+        const data = await response.json()
+        console.log('Printful API response:', data)
+        
         if (response.ok) {
-          const data = await response.json()
           setPrintfulProducts(data.products || [])
         }
       } catch (error) {
