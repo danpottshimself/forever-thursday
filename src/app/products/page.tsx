@@ -14,6 +14,7 @@ export default function ProductsPage() {
   const [favorites, setFavorites] = useState<Set<string>>(new Set())
   const [printfulProducts, setPrintfulProducts] = useState<Product[]>([])
   const [isLoadingPrintful, setIsLoadingPrintful] = useState(true)
+  const [printfulError, setPrintfulError] = useState<string | null>(null)
 
   const openModal = (product: Product) => {
     setSelectedProduct(product)
@@ -44,11 +45,16 @@ export default function ProductsPage() {
         const data = await response.json()
         console.log('Printful API response:', data)
         
-        if (response.ok) {
+        if (!response.ok) {
+          setPrintfulError(data.error || data.details || 'Failed to fetch products')
+          console.error('Printful API error:', data)
+        } else {
           setPrintfulProducts(data.products || [])
+          console.log('Printful products loaded:', data.products?.length || 0)
         }
       } catch (error) {
         console.error('Error fetching Printful products:', error)
+        setPrintfulError('Failed to connect to Printful API')
       } finally {
         setIsLoadingPrintful(false)
       }
@@ -114,110 +120,63 @@ export default function ProductsPage() {
             ))}
           </div>
           
-          {/* Additional placeholder products */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-8">
-            {[
-              {
-                id: '7',
-                name: 'Midnight Dreams Pillow Spray',
-                description: 'Lavender and chamomile for peaceful sleep',
-                price: 22.99,
-                image: '/images/pillow-spray-3.jpg',
-                category: 'pillow-sprays' as const,
-              },
-              {
-                id: '8',
-                name: 'Gothic Romance Wax Melt',
-                description: 'Dark rose and amber for mysterious nights',
-                price: 21.99,
-                image: '/images/wax-melt-3.jpg',
-                category: 'wax-melts' as const,
-              },
-              {
-                id: '9',
-                name: 'Emo Vibes Print',
-                description: 'Hand-drawn artwork celebrating emo culture',
-                price: 32.99,
-                image: '/images/print-3.jpg',
-                category: 'prints' as const,
-              },
-              {
-                id: '10',
-                name: 'Broken Heart Pillow Spray',
-                description: 'Rose and vanilla for healing moments',
-                price: 25.99,
-                image: '/images/pillow-spray-4.jpg',
-                category: 'pillow-sprays' as const,
-              },
-              {
-                id: '11',
-                name: 'Dark Angel Wax Melt',
-                description: 'Jasmine and sandalwood for divine dreams',
-                price: 20.99,
-                image: '/images/wax-melt-4.jpg',
-                category: 'wax-melts' as const,
-              },
-              {
-                id: '12',
-                name: 'Forever February Art Print',
-                description: 'Exclusive artwork featuring our signature style',
-                price: 39.99,
-                image: '/images/print-4.jpg',
-                category: 'prints' as const,
-              },
-            ].map((product, index) => (
-              <motion.div
-                key={product.id}
-                initial={{ opacity: 0, y: 50 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.1 * (index + 6) }}
-              >
-                <ProductCard product={product} onClick={openModal} />
-              </motion.div>
-            ))}
-          </div>
         </div>
       </section>
 
       {/* T-Shirts Section from Printful */}
-      {printfulProducts.length > 0 && (
-        <section className="py-16 px-4 bg-gray-50">
-          <div className="max-w-6xl mx-auto">
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.3 }}
-              className="mb-12"
-            >
-              <h2 className="text-3xl md:text-4xl font-bold text-center mb-8 sketchy-font-alt">
-                <span className="text-black">SHOP</span> T-SHIRTS{' '}
-                <span className="text-black">FROM PRINTFUL</span>
-              </h2>
-            </motion.div>
-            
-            {isLoadingPrintful ? (
-              <div className="text-center py-12">
-                <div className="inline-block animate-pulse">
-                  <div className="h-12 w-48 bg-gray-300 rounded mx-auto"></div>
-                </div>
+      <section className="py-16 px-4 bg-gray-50">
+        <div className="max-w-6xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.3 }}
+            className="mb-12"
+          >
+            <h2 className="text-3xl md:text-4xl font-bold text-center mb-8 sketchy-font-alt">
+              <span className="text-black">SHOP</span> T-SHIRTS{' '}
+              <span className="text-black">FROM PRINTFUL</span>
+            </h2>
+          </motion.div>
+          
+          {isLoadingPrintful ? (
+            <div className="text-center py-12">
+              <div className="inline-block animate-pulse">
+                <div className="h-12 w-48 bg-gray-300 rounded mx-auto"></div>
               </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {printfulProducts.map((product, index) => (
-                  <motion.div
-                    key={product.id}
-                    initial={{ opacity: 0, y: 50 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.1 * index }}
-                  >
-                    <ProductCard product={product} onClick={openModal} />
-                  </motion.div>
-                ))}
-              </div>
-            )}
-          </div>
-        </section>
-      )}
+            </div>
+          ) : printfulError ? (
+            <div className="text-center py-12 bg-red-50 border border-red-200 rounded-lg p-6">
+              <p className="text-red-600 font-bold sketchy-font-alt mb-2">Printful API Error</p>
+              <p className="text-red-500 text-sm sketchy-font-alt">{printfulError}</p>
+              <p className="text-gray-500 text-xs mt-4 sketchy-font-alt">
+                Make sure to add your PRINTFUL_API_KEY to Vercel environment variables
+              </p>
+            </div>
+          ) : printfulProducts.length === 0 ? (
+            <div className="text-center py-12 bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+              <p className="text-yellow-600 font-bold sketchy-font-alt">
+                No T-shirts available from Printful
+              </p>
+              <p className="text-gray-500 text-sm mt-2 sketchy-font-alt">
+                Add products to your Printful store to see them here
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {printfulProducts.map((product, index) => (
+                <motion.div
+                  key={product.id}
+                  initial={{ opacity: 0, y: 50 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: 0.1 * index }}
+                >
+                  <ProductCard product={product} onClick={openModal} />
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
 
       {/* Call to Action */}
       <section className="py-16 px-4">
