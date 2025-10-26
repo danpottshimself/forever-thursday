@@ -8,6 +8,7 @@ export const products: Product[] = [
     price: 24.99,
     image: '/images/pillow-spray-placeholder.svg',
     category: 'pillow-sprays',
+    isSoldOut: true,
   },
   {
     id: '2',
@@ -16,6 +17,7 @@ export const products: Product[] = [
     price: 18.99,
     image: '/images/wax-melt-placeholder.svg',
     category: 'wax-melts',
+    isSoldOut: true,
   },
   {
     id: '3',
@@ -24,6 +26,7 @@ export const products: Product[] = [
     price: 29.99,
     image: '/images/print-placeholder.svg',
     category: 'prints',
+    isSoldOut: true,
   },
   {
     id: '4',
@@ -32,6 +35,7 @@ export const products: Product[] = [
     price: 26.99,
     image: '/images/pillow-spray-placeholder.svg',
     category: 'pillow-sprays',
+    isSoldOut: true,
   },
   {
     id: '5',
@@ -40,6 +44,7 @@ export const products: Product[] = [
     price: 19.99,
     image: '/images/wax-melt-placeholder.svg',
     category: 'wax-melts',
+    isSoldOut: true,
   },
   {
     id: '6',
@@ -48,6 +53,7 @@ export const products: Product[] = [
     price: 34.99,
     image: '/images/print-placeholder.svg',
     category: 'prints',
+    isSoldOut: true,
   },
   {
     id: '7',
@@ -56,6 +62,7 @@ export const products: Product[] = [
     price: 22.99,
     image: '/images/pillow-spray-placeholder.svg',
     category: 'pillow-sprays',
+    isSoldOut: true,
   },
   {
     id: '8',
@@ -64,6 +71,7 @@ export const products: Product[] = [
     price: 21.99,
     image: '/images/wax-melt-placeholder.svg',
     category: 'wax-melts',
+    isSoldOut: true,
   },
   {
     id: '9',
@@ -72,6 +80,7 @@ export const products: Product[] = [
     price: 32.99,
     image: '/images/print-placeholder.svg',
     category: 'prints',
+    isSoldOut: true,
   },
   {
     id: '10',
@@ -80,6 +89,7 @@ export const products: Product[] = [
     price: 25.99,
     image: '/images/pillow-spray-placeholder.svg',
     category: 'pillow-sprays',
+    isSoldOut: true,
   },
   {
     id: '11',
@@ -88,6 +98,7 @@ export const products: Product[] = [
     price: 20.99,
     image: '/images/wax-melt-placeholder.svg',
     category: 'wax-melts',
+    isSoldOut: true,
   },
   {
     id: '12',
@@ -96,5 +107,6 @@ export const products: Product[] = [
     price: 39.99,
     image: '/images/print-placeholder.svg',
     category: 'prints',
+    isSoldOut: true,
   },
 ]

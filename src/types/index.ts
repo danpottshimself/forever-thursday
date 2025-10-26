@@ -6,6 +6,7 @@ export interface Product {
   image: string
   category: 'pillow-sprays' | 'wax-melts' | 'prints' | 'tshirts'
   stripePriceId?: string
+  isSoldOut?: boolean
 }
 
 export interface CartItem {

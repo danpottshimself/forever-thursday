@@ -13,10 +13,13 @@ interface ProductCardProps {
 
 export default function ProductCard({ product, onClick }: ProductCardProps) {
   const { addToCart } = useCart()
+  const isSoldOut = product.isSoldOut || false
 
   const handleBuyNow = (e: React.MouseEvent) => {
     e.stopPropagation() // Prevent triggering the card click
-    addToCart(product)
+    if (!isSoldOut) {
+      addToCart(product)
+    }
   }
 
   const handleViewDetails = (e: React.MouseEvent) => {
@@ -40,6 +43,13 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
         <div className="absolute top-4 right-4 bg-black text-white px-2 py-1 rounded text-sm font-bold sketchy-font-alt">
           ${product.price}
         </div>
+        {isSoldOut && (
+          <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+            <div className="bg-red-600 text-white px-6 py-3 rounded-lg font-bold sketchy-font-alt text-xl">
+              SOLD OUT
+            </div>
+          </div>
+        )}
       </div>
       
       <div className="p-6">
@@ -56,10 +66,11 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
         <div className="flex gap-2">
           <button
             onClick={handleBuyNow}
-            className="flex-1 bg-black text-white font-bold py-2 px-3 rounded-lg hover:bg-gray-800 transition-colors duration-300 sketchy-font-alt flex items-center justify-center gap-2 text-sm"
+            disabled={isSoldOut}
+            className="flex-1 bg-black text-white font-bold py-2 px-3 rounded-lg hover:bg-gray-800 transition-colors duration-300 sketchy-font-alt flex items-center justify-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <ShoppingCart size={16} />
-            BUY NOW
+            {isSoldOut ? 'SOLD OUT' : 'BUY NOW'}
           </button>
           <button
             onClick={handleViewDetails}

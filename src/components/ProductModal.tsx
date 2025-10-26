@@ -27,10 +27,14 @@ export default function ProductModal({
 
   if (!product) return null
 
+  const isSoldOut = product.isSoldOut || false
+
   const handleAddToCart = () => {
-    addToCart(product, quantity)
-    onClose()
-    setQuantity(1) // Reset quantity
+    if (!isSoldOut) {
+      addToCart(product, quantity)
+      onClose()
+      setQuantity(1) // Reset quantity
+    }
   }
 
   const incrementQuantity = () => {
@@ -145,26 +149,34 @@ export default function ProductModal({
 
                 {/* Action Buttons */}
                 <div className="flex flex-col sm:flex-row gap-3">
-                  <button
-                    onClick={handleAddToCart}
-                    className="flex-1 bg-black text-white font-bold py-4 px-4 rounded-lg hover:bg-gray-800 transition-all duration-300 sketchy-font-alt flex items-center justify-center gap-2 text-base whitespace-nowrap"
-                  >
-                    <ShoppingCart size={20} />
-                    <span>ADD {quantity} TO CART</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      handleAddToCart()
-                      // Redirect to cart page after adding
-                      setTimeout(() => {
-                        window.location.href = '/cart'
-                      }, 500)
-                    }}
-                    className="flex-1 bg-gray-800 text-white font-bold py-4 px-4 rounded-lg hover:bg-gray-700 transition-all duration-300 sketchy-font-alt flex items-center justify-center gap-2 text-base whitespace-nowrap"
-                  >
-                    <ShoppingCart size={20} />
-                    <span>BUY NOW - ${(product.price * quantity).toFixed(2)}</span>
-                  </button>
+                  {isSoldOut ? (
+                    <div className="w-full bg-red-600 text-white font-bold py-4 px-4 rounded-lg sketchy-font-alt text-center">
+                      SOLD OUT
+                    </div>
+                  ) : (
+                    <>
+                      <button
+                        onClick={handleAddToCart}
+                        className="flex-1 bg-black text-white font-bold py-4 px-4 rounded-lg hover:bg-gray-800 transition-all duration-300 sketchy-font-alt flex items-center justify-center gap-2 text-base whitespace-nowrap"
+                      >
+                        <ShoppingCart size={20} />
+                        <span>ADD {quantity} TO CART</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          handleAddToCart()
+                          // Redirect to cart page after adding
+                          setTimeout(() => {
+                            window.location.href = '/cart'
+                          }, 500)
+                        }}
+                        className="flex-1 bg-gray-800 text-white font-bold py-4 px-4 rounded-lg hover:bg-gray-700 transition-all duration-300 sketchy-font-alt flex items-center justify-center gap-2 text-base whitespace-nowrap"
+                      >
+                        <ShoppingCart size={20} />
+                        <span>BUY NOW - ${(product.price * quantity).toFixed(2)}</span>
+                      </button>
+                    </>
+                  )}
                 </div>
 
                 {/* Product Details */}
