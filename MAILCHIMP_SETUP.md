@@ -50,3 +50,4 @@ Add the environment variables to your Vercel project:
 2. Select your project
 3. Go to Settings > Environment Variables
 4. Add each variable with the correct values
+

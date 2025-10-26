@@ -1,7 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import ProductCard from '@/components/ProductCard'
 import ProductModal from '@/components/ProductModal'
@@ -12,6 +12,8 @@ export default function ProductsPage() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [favorites, setFavorites] = useState<Set<string>>(new Set())
+  const [printfulProducts, setPrintfulProducts] = useState<Product[]>([])
+  const [isLoadingPrintful, setIsLoadingPrintful] = useState(true)
 
   const openModal = (product: Product) => {
     setSelectedProduct(product)
@@ -34,6 +36,25 @@ export default function ProductsPage() {
       return newFavorites
     })
   }
+
+  useEffect(() => {
+    const fetchPrintfulProducts = async () => {
+      try {
+        const response = await fetch('/api/printful')
+        if (response.ok) {
+          const data = await response.json()
+          setPrintfulProducts(data.products || [])
+        }
+      } catch (error) {
+        console.error('Error fetching Printful products:', error)
+      } finally {
+        setIsLoadingPrintful(false)
+      }
+    }
+
+    fetchPrintfulProducts()
+  }, [])
+
   return (
     <div className="bg-white">
       {/* Hero Section */}
@@ -155,6 +176,46 @@ export default function ProductsPage() {
           </div>
         </div>
       </section>
+
+      {/* T-Shirts Section from Printful */}
+      {printfulProducts.length > 0 && (
+        <section className="py-16 px-4 bg-gray-50">
+          <div className="max-w-6xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.3 }}
+              className="mb-12"
+            >
+              <h2 className="text-3xl md:text-4xl font-bold text-center mb-8 sketchy-font-alt">
+                <span className="text-black">SHOP</span> T-SHIRTS{' '}
+                <span className="text-black">FROM PRINTFUL</span>
+              </h2>
+            </motion.div>
+            
+            {isLoadingPrintful ? (
+              <div className="text-center py-12">
+                <div className="inline-block animate-pulse">
+                  <div className="h-12 w-48 bg-gray-300 rounded mx-auto"></div>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {printfulProducts.map((product, index) => (
+                  <motion.div
+                    key={product.id}
+                    initial={{ opacity: 0, y: 50 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: 0.1 * index }}
+                  >
+                    <ProductCard product={product} onClick={openModal} />
+                  </motion.div>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
 
       {/* Call to Action */}
       <section className="py-16 px-4">

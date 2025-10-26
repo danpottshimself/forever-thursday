@@ -4,7 +4,7 @@ export interface Product {
   description: string
   price: number
   image: string
-  category: 'pillow-sprays' | 'wax-melts' | 'prints'
+  category: 'pillow-sprays' | 'wax-melts' | 'prints' | 'tshirts'
   stripePriceId?: string
 }
 

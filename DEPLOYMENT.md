@@ -88,3 +88,4 @@ The project is already optimized for Vercel with:
 For deployment issues:
 - Check Vercel documentation: https://vercel.com/docs
 - Contact: danpottshimself@gmail.com
+
