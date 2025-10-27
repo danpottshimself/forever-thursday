@@ -61,22 +61,46 @@ export async function fetchPrintfulProducts(): Promise<PrintfulProduct[]> {
       return []
     }
 
-    // Fetch store products from Printful
-    const response = await fetch('https://api.printful.com/store/products', {
+    // Encode API key for Basic auth
+    const base64Key = Buffer.from(apiKey).toString('base64')
+    
+    console.log('Fetching from Printful store/products endpoint...')
+    
+    // Try store/products endpoint first
+    const storeResponse = await fetch('https://api.printful.com/store/products', {
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
+        'Authorization': `Basic ${base64Key}`,
         'Content-Type': 'application/json'
       }
     })
 
+    console.log('Store products response status:', storeResponse.status)
+
+    let response = storeResponse
+    let data: PrintfulResponse
+
+    if (!storeResponse.ok && storeResponse.status === 401) {
+      console.log('store/products failed, trying sync/products...')
+      // Try sync/products as fallback
+      response = await fetch('https://api.printful.com/sync/products', {
+        headers: {
+          'Authorization': `Basic ${base64Key}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      console.log('Sync products response status:', response.status)
+    }
+
     if (!response.ok) {
-      console.error('Failed to fetch Printful products:', response.statusText)
+      const errorText = await response.text()
+      console.error('Failed to fetch Printful products:', response.status, errorText)
       return []
     }
 
-    const data: PrintfulResponse = await response.json()
+    data = await response.json()
+    console.log('Printful API response:', JSON.stringify(data, null, 2))
 
-    if (!data.result || !data.result.items) {
+    if (!data?.result?.items) {
       console.error('Invalid Printful response format')
       return []
     }
