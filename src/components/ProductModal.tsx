@@ -74,39 +74,21 @@ export default function ProductModal({
             if (data.variants.colors.length > 0) {
               const firstColor = data.variants.colors[0].name
               setSelectedColor(firstColor)
-              // Set initial image from first color - prefer thumbnail from variant
+              // Set initial image from first color - use previewUrl from last file
               const firstColorGroup = data.variants.colors[0]
-              let thumbnailUrl = null
-              if (firstColorGroup.variants && firstColorGroup.variants.length > 0) {
-                const variantWithThumbnail = firstColorGroup.variants.find((v: any) => v.thumbnail_url)
-                if (variantWithThumbnail) {
-                  thumbnailUrl = variantWithThumbnail.thumbnail_url
-                }
-              }
               
-              if (thumbnailUrl) {
-                setDisplayImage(thumbnailUrl)
+              // Use previewUrl if available (from last file in files array)
+              if (firstColorGroup.previewUrl) {
+                setDisplayImage(firstColorGroup.previewUrl)
               } else {
-                // Try to get thumbnail from API response
-                if (data.thumbnailUrl) {
-                  setDisplayImage(data.thumbnailUrl)
+                // Fallback to first image from images array
+                const firstColorImages = firstColorGroup.images || []
+                if (firstColorImages.length > 0) {
+                  setDisplayImage(firstColorImages[0])
+                } else if (data.images && data.images.length > 0) {
+                  setDisplayImage(data.images[0])
                 } else {
-                  const firstColorImages = firstColorGroup.images || []
-                  if (firstColorImages.length > 0) {
-                    // Check for thumbnail in images array
-                    const thumbnailImg = firstColorImages.find((img: string) => 
-                      typeof img === 'string' && (
-                        img.includes('thumbnail') || 
-                        img.includes('/thumb') || 
-                        img.includes('_thumb')
-                      )
-                    )
-                    setDisplayImage(thumbnailImg || firstColorImages[0])
-                  } else if (data.images && data.images.length > 0) {
-                    setDisplayImage(data.images[0])
-                  } else {
-                    setDisplayImage(product?.image || '')
-                  }
+                  setDisplayImage(product?.image || '')
                 }
               }
               // Set initial variant and price
@@ -156,34 +138,15 @@ export default function ProductModal({
     if (variants && selectedColor) {
       const colorGroup = variants.colors.find((c: any) => c.name === selectedColor)
       if (colorGroup) {
-        // Update image for selected color - prefer thumbnail
-        // Try to find thumbnail_url from variants first
-        let thumbnailUrl = null
-        if (colorGroup.variants && colorGroup.variants.length > 0) {
-          const variantWithThumbnail = colorGroup.variants.find((v: any) => v.thumbnail_url)
-          if (variantWithThumbnail) {
-            thumbnailUrl = variantWithThumbnail.thumbnail_url
-          }
-        }
-        
-        // Use thumbnail_url if found, otherwise use first image from images array
-        if (thumbnailUrl) {
-          setDisplayImage(thumbnailUrl)
+        // Update image for selected color - use previewUrl from last file
+        if (colorGroup.previewUrl) {
+          setDisplayImage(colorGroup.previewUrl)
         } else {
+          // Fallback to first image from images array
           const colorImages = colorGroup.images || []
           if (colorImages.length > 0) {
-            // Check if first image is a thumbnail
-            const firstImage = colorImages[0]
-            const isThumbnail = typeof firstImage === 'string' && (
-              firstImage.includes('thumbnail') || 
-              firstImage.includes('/thumb') || 
-              firstImage.includes('_thumb')
-            )
-            setDisplayImage(isThumbnail ? firstImage : (colorImages.find((img: string) => 
-              img.includes('thumbnail') || img.includes('/thumb') || img.includes('_thumb')
-            ) || firstImage))
+            setDisplayImage(colorImages[0])
           } else if (productImages.length > 0) {
-            // productImages should have thumbnail first if available
             setDisplayImage(productImages[0])
           } else {
             setDisplayImage(product?.image || '')

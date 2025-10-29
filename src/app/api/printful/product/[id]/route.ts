@@ -124,22 +124,31 @@ export async function GET(
     })
 
     organizedVariants.colors = Array.from(colorMap.entries()).map(([name, data]) => {
-      // Convert Set to Array and prioritize thumbnail_urls
-      const allImages = Array.from(data.images)
-      const thumbnailUrls = allImages.filter(img => 
-        typeof img === 'string' && (
-          img.includes('thumbnail') || 
-          img.includes('/thumb') || 
-          img.includes('_thumb')
-        )
-      )
-      const otherImages = allImages.filter(img => !thumbnailUrls.includes(img))
+      // Get the last file's preview_url from variants in this color group
+      let lastFilePreviewUrl: string | null = null
       
-      // Return thumbnails first, then other images
+      // Look through all variants for this color to find files
+      for (const variant of data.variants) {
+        if (variant.files && Array.isArray(variant.files) && variant.files.length > 0) {
+          const lastFile = variant.files[variant.files.length - 1]
+          if (lastFile.preview_url) {
+            lastFilePreviewUrl = lastFile.preview_url
+            break // Use first variant with files that has preview_url
+          }
+        }
+      }
+      
+      // Convert Set to Array and prioritize last file preview_url
+      const allImages = Array.from(data.images)
+      const imageArray = lastFilePreviewUrl 
+        ? [lastFilePreviewUrl, ...allImages.filter(img => img !== lastFilePreviewUrl)]
+        : allImages
+      
       return {
         name,
         variants: data.variants,
-        images: [...thumbnailUrls, ...otherImages]
+        images: imageArray,
+        previewUrl: lastFilePreviewUrl // Expose preview_url directly for easy access
       }
     })
 
