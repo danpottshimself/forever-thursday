@@ -122,6 +122,7 @@ export default function CheckoutPage() {
           body: JSON.stringify({
             amount: getCartTotal(),
             currency: 'gbp',
+            cartItems: cart, // Send cart items for Printful order creation
           }),
         })
 
@@ -138,7 +139,7 @@ export default function CheckoutPage() {
     }
 
     createPaymentIntent()
-  }, [])
+  }, [cart, getCartTotal])
 
   if (cart.length === 0) {
     return (
