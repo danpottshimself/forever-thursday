@@ -143,19 +143,31 @@ export async function GET(
       }
     })
 
-    // Also include product-level images - prioritize thumbnail_url
+    // Also include product-level images - prioritize sync_product.thumbnail_url
     const productImages: string[] = []
-    if (productData.thumbnail_url) {
+    
+    // Check sync_product.thumbnail_url first (user specified this field)
+    if (productData.sync_product?.thumbnail_url) {
+      productImages.push(productData.sync_product.thumbnail_url)
+    }
+    // Then check top-level thumbnail_url
+    else if (productData.thumbnail_url) {
       productImages.push(productData.thumbnail_url)
     }
+    
+    // Then other images
     if (productData.images && Array.isArray(productData.images)) {
       productImages.push(...productData.images.map((img: any) => img.url || img))
     }
 
+    // Also include sync_product.thumbnail_url in the response for easy access
+    const thumbnailUrl = productData.sync_product?.thumbnail_url || productData.thumbnail_url || null
+
     return NextResponse.json({
       product: productData,
       variants: organizedVariants,
-      images: productImages
+      images: productImages,
+      thumbnailUrl: thumbnailUrl
     })
   } catch (error: any) {
     console.error('Error fetching Printful product:', error)

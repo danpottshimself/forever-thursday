@@ -87,21 +87,26 @@ export default function ProductModal({
               if (thumbnailUrl) {
                 setDisplayImage(thumbnailUrl)
               } else {
-                const firstColorImages = firstColorGroup.images || []
-                if (firstColorImages.length > 0) {
-                  // Check for thumbnail in images array
-                  const thumbnailImg = firstColorImages.find((img: string) => 
-                    typeof img === 'string' && (
-                      img.includes('thumbnail') || 
-                      img.includes('/thumb') || 
-                      img.includes('_thumb')
-                    )
-                  )
-                  setDisplayImage(thumbnailImg || firstColorImages[0])
-                } else if (data.images && data.images.length > 0) {
-                  setDisplayImage(data.images[0])
+                // Try to get thumbnail from API response
+                if (data.thumbnailUrl) {
+                  setDisplayImage(data.thumbnailUrl)
                 } else {
-                  setDisplayImage(product?.image || '')
+                  const firstColorImages = firstColorGroup.images || []
+                  if (firstColorImages.length > 0) {
+                    // Check for thumbnail in images array
+                    const thumbnailImg = firstColorImages.find((img: string) => 
+                      typeof img === 'string' && (
+                        img.includes('thumbnail') || 
+                        img.includes('/thumb') || 
+                        img.includes('_thumb')
+                      )
+                    )
+                    setDisplayImage(thumbnailImg || firstColorImages[0])
+                  } else if (data.images && data.images.length > 0) {
+                    setDisplayImage(data.images[0])
+                  } else {
+                    setDisplayImage(product?.image || '')
+                  }
                 }
               }
               // Set initial variant and price
@@ -178,6 +183,7 @@ export default function ProductModal({
               img.includes('thumbnail') || img.includes('/thumb') || img.includes('_thumb')
             ) || firstImage))
           } else if (productImages.length > 0) {
+            // productImages should have thumbnail first if available
             setDisplayImage(productImages[0])
           } else {
             setDisplayImage(product?.image || '')
