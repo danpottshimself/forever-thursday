@@ -32,11 +32,22 @@ export default function ProductModal({
   const [loadingVariants, setLoadingVariants] = useState(false)
   const [productImages, setProductImages] = useState<string[]>([])
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
-  const [displayImages, setDisplayImages] = useState<string[]>([])
+  const [displayImages, setDisplayImages] = useState<string[]>([product?.image || ''])
+  const [isMounted, setIsMounted] = useState(false)
+  const [touchStart, setTouchStart] = useState<number | null>(null)
+  const [touchEnd, setTouchEnd] = useState<number | null>(null)
 
   // Check if this is a Printful product
   const isPrintfulProduct = product?.id?.startsWith('printful-') || false
   const printfulProductId = isPrintfulProduct && product ? product.id.replace('printful-', '') : null
+
+  // Set mounted state to prevent hydration issues
+  useEffect(() => {
+    setIsMounted(true)
+    if (product && !isPrintfulProduct) {
+      setDisplayImages([product.image])
+    }
+  }, [product, isPrintfulProduct])
 
   // Fetch variants when modal opens for Printful products
   useEffect(() => {
@@ -177,9 +188,6 @@ export default function ProductModal({
     setCurrentImageIndex((prev) => (prev - 1 + displayImages.length) % displayImages.length)
   }
 
-  const [touchStart, setTouchStart] = useState<number | null>(null)
-  const [touchEnd, setTouchEnd] = useState<number | null>(null)
-
   const minSwipeDistance = 50
 
   const onTouchStart = (e: React.TouchEvent) => {
@@ -233,82 +241,82 @@ export default function ProductModal({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
               {/* Product Image Carousel */}
               <div className="relative h-64 md:h-full bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">
-                {displayImages.length > 0 ? (
+                {/* Image Container */}
+                <div 
+                  className="relative w-full h-full"
+                  onTouchStart={onTouchStart}
+                  onTouchMove={onTouchMove}
+                  onTouchEnd={onTouchEnd}
+                >
+                  {displayImages.length > 1 && isMounted ? (
+                    <AnimatePresence mode="wait">
+                      <motion.div
+                        key={currentImageIndex}
+                        initial={{ opacity: 0, x: 100 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -100 }}
+                        transition={{ duration: 0.3 }}
+                        className="absolute inset-0"
+                      >
+                        <Image
+                          src={displayImages[currentImageIndex] || product.image}
+                          alt={`${product.name} - Image ${currentImageIndex + 1}`}
+                          fill
+                          className="object-contain p-8"
+                        />
+                      </motion.div>
+                    </AnimatePresence>
+                  ) : (
+                    <div className="absolute inset-0">
+                      <Image
+                        src={displayImages[0] || product.image}
+                        alt={product.name}
+                        fill
+                        className="object-contain p-8"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Navigation Arrows */}
+                {isMounted && displayImages.length > 1 && (
                   <>
-                    {/* Image Container */}
-                    <div 
-                      className="relative w-full h-full"
-                      onTouchStart={onTouchStart}
-                      onTouchMove={onTouchMove}
-                      onTouchEnd={onTouchEnd}
+                    <button
+                      onClick={prevImage}
+                      className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-black/50 rounded-full hover:bg-black/70 transition-colors z-10"
+                      aria-label="Previous image"
                     >
-                      <AnimatePresence mode="wait">
-                        <motion.div
-                          key={currentImageIndex}
-                          initial={{ opacity: 0, x: 100 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          exit={{ opacity: 0, x: -100 }}
-                          transition={{ duration: 0.3 }}
-                          className="absolute inset-0"
-                        >
-                          <Image
-                            src={displayImages[currentImageIndex] || product.image}
-                            alt={`${product.name} - Image ${currentImageIndex + 1}`}
-                            fill
-                            className="object-contain p-8"
-                          />
-                        </motion.div>
-                      </AnimatePresence>
+                      <ChevronLeft size={24} className="text-white" />
+                    </button>
+                    <button
+                      onClick={nextImage}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-black/50 rounded-full hover:bg-black/70 transition-colors z-10"
+                      aria-label="Next image"
+                    >
+                      <ChevronRight size={24} className="text-white" />
+                    </button>
+
+                    {/* Image Indicators */}
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+                      {displayImages.map((_, index) => (
+                        <button
+                          key={index}
+                          onClick={() => setCurrentImageIndex(index)}
+                          className={`h-2 rounded-full transition-all ${
+                            currentImageIndex === index
+                              ? 'w-8 bg-black'
+                              : 'w-2 bg-black/50 hover:bg-black/70'
+                          }`}
+                          aria-label={`Go to image ${index + 1}`}
+                        />
+                      ))}
                     </div>
 
-                    {/* Navigation Arrows */}
-                    {displayImages.length > 1 && (
-                      <>
-                        <button
-                          onClick={prevImage}
-                          className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-black/50 rounded-full hover:bg-black/70 transition-colors z-10"
-                          aria-label="Previous image"
-                        >
-                          <ChevronLeft size={24} className="text-white" />
-                        </button>
-                        <button
-                          onClick={nextImage}
-                          className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-black/50 rounded-full hover:bg-black/70 transition-colors z-10"
-                          aria-label="Next image"
-                        >
-                          <ChevronRight size={24} className="text-white" />
-                        </button>
-
-                        {/* Image Indicators */}
-                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10">
-                          {displayImages.map((_, index) => (
-                            <button
-                              key={index}
-                              onClick={() => setCurrentImageIndex(index)}
-                              className={`h-2 rounded-full transition-all ${
-                                currentImageIndex === index
-                                  ? 'w-8 bg-black'
-                                  : 'w-2 bg-black/50 hover:bg-black/70'
-                              }`}
-                              aria-label={`Go to image ${index + 1}`}
-                            />
-                          ))}
-                        </div>
-
-                        {/* Image Counter */}
-                        <div className="absolute top-4 right-4 px-3 py-1 bg-black/50 rounded-full text-white text-sm font-bold sketchy-font-alt z-10">
-                          {currentImageIndex + 1} / {displayImages.length}
-                        </div>
-                      </>
-                    )}
+                    {/* Image Counter */}
+                    <div className="absolute top-4 right-4 px-3 py-1 bg-black/50 rounded-full text-white text-sm font-bold sketchy-font-alt z-10">
+                      {currentImageIndex + 1} / {displayImages.length}
+                    </div>
                   </>
-                ) : (
-                  <Image
-                    src={product.image}
-                    alt={product.name}
-                    fill
-                    className="object-contain p-8"
-                  />
                 )}
                 
                 {/* Favorite Button */}
@@ -470,7 +478,9 @@ export default function ProductModal({
                           handleAddToCart()
                           // Redirect to cart page after adding
                           setTimeout(() => {
-                            window.location.href = '/cart'
+                            if (typeof window !== 'undefined') {
+                              window.location.href = '/cart'
+                            }
                           }, 500)
                         }}
                         className="flex-1 bg-gray-800 text-white font-bold py-4 px-4 rounded-lg hover:bg-gray-700 transition-all duration-300 sketchy-font-alt flex items-center justify-center gap-2 text-base whitespace-nowrap"

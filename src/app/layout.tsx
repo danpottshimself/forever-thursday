@@ -34,7 +34,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={`${inter.className} bg-white text-black`}>
+      <body className={`${inter.className} bg-white text-black`} suppressHydrationWarning>
         <CartProvider>
           <NewsletterBanner />
           <Header />
