@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { Product } from '@/types'
-import { X, Plus, Minus, ShoppingCart, Heart, Star, ChevronLeft, ChevronRight } from 'lucide-react'
+import { X, Plus, Minus, ShoppingCart, Heart, Star, ZoomIn, ZoomOut, Move } from 'lucide-react'
 import { useCart } from '@/contexts/CartContext'
 
 interface ProductModalProps {
@@ -31,11 +31,15 @@ export default function ProductModal({
   const [variantPrice, setVariantPrice] = useState<number | null>(null)
   const [loadingVariants, setLoadingVariants] = useState(false)
   const [productImages, setProductImages] = useState<string[]>([])
-  const [currentImageIndex, setCurrentImageIndex] = useState(0)
-  const [displayImages, setDisplayImages] = useState<string[]>([product?.image || ''])
+  const [displayImage, setDisplayImage] = useState<string>(product?.image || '')
   const [isMounted, setIsMounted] = useState(false)
-  const [touchStart, setTouchStart] = useState<number | null>(null)
-  const [touchEnd, setTouchEnd] = useState<number | null>(null)
+  const [isZoomed, setIsZoomed] = useState(false)
+  const [zoomScale, setZoomScale] = useState(1)
+  const [panX, setPanX] = useState(0)
+  const [panY, setPanY] = useState(0)
+  const [isDragging, setIsDragging] = useState(false)
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
+  const [clickStart, setClickStart] = useState({ x: 0, y: 0, time: 0 })
 
   // Check if this is a Printful product
   const isPrintfulProduct = product?.id?.startsWith('printful-') || false
@@ -45,7 +49,7 @@ export default function ProductModal({
   useEffect(() => {
     setIsMounted(true)
     if (product && !isPrintfulProduct) {
-      setDisplayImages([product.image])
+      setDisplayImage(product.image)
     }
   }, [product, isPrintfulProduct])
 
@@ -69,13 +73,13 @@ export default function ProductModal({
             if (data.variants.colors.length > 0) {
               const firstColor = data.variants.colors[0].name
               setSelectedColor(firstColor)
-              // Set initial images from first color
+              // Set initial image from first color
               if (data.variants.colors[0].images && data.variants.colors[0].images.length > 0) {
-                setDisplayImages(data.variants.colors[0].images)
+                setDisplayImage(data.variants.colors[0].images[0])
               } else if (data.images && data.images.length > 0) {
-                setDisplayImages(data.images)
+                setDisplayImage(data.images[0])
               } else {
-                setDisplayImages([product?.image || ''])
+                setDisplayImage(product?.image || '')
               }
               // Set initial variant and price
               const firstColorVariants = data.variants.colors[0].variants
@@ -87,9 +91,9 @@ export default function ProductModal({
             } else {
               // No colors, use product images
               if (data.images && data.images.length > 0) {
-                setDisplayImages(data.images)
+                setDisplayImage(data.images[0])
               } else {
-                setDisplayImages([product?.image || ''])
+                setDisplayImage(product?.image || '')
               }
             }
           }
@@ -108,29 +112,35 @@ export default function ProductModal({
       setVariantPrice(null)
       setQuantity(1)
       setProductImages([])
-      setCurrentImageIndex(0)
-      setDisplayImages([product?.image || ''])
+      setDisplayImage(product?.image || '')
+      setIsZoomed(false)
+      setZoomScale(1)
+      setPanX(0)
+      setPanY(0)
     } else if (isOpen && !isPrintfulProduct && product) {
       // For non-Printful products, just use the product image
-      setDisplayImages([product.image])
-      setCurrentImageIndex(0)
+      setDisplayImage(product.image)
     }
   }, [isOpen, isPrintfulProduct, printfulProductId, product])
 
-  // Update images when color changes
+  // Update image when color changes
   useEffect(() => {
     if (variants && selectedColor) {
       const colorGroup = variants.colors.find((c: any) => c.name === selectedColor)
       if (colorGroup) {
-        // Update images for selected color
+        // Update image for selected color (use first image)
         if (colorGroup.images && colorGroup.images.length > 0) {
-          setDisplayImages(colorGroup.images)
+          setDisplayImage(colorGroup.images[0])
         } else if (productImages.length > 0) {
-          setDisplayImages(productImages)
+          setDisplayImage(productImages[0])
         } else {
-          setDisplayImages([product?.image || ''])
+          setDisplayImage(product?.image || '')
         }
-        setCurrentImageIndex(0)
+        // Reset zoom when color changes
+        setIsZoomed(false)
+        setZoomScale(1)
+        setPanX(0)
+        setPanY(0)
       }
     }
   }, [selectedColor, variants, productImages, product])
@@ -180,37 +190,105 @@ export default function ProductModal({
     setQuantity(prev => Math.max(prev - 1, 1)) // Min 1
   }
 
-  const nextImage = () => {
-    setCurrentImageIndex((prev) => (prev + 1) % displayImages.length)
-  }
-
-  const prevImage = () => {
-    setCurrentImageIndex((prev) => (prev - 1 + displayImages.length) % displayImages.length)
-  }
-
-  const minSwipeDistance = 50
-
-  const onTouchStart = (e: React.TouchEvent) => {
-    setTouchEnd(null)
-    setTouchStart(e.targetTouches[0].clientX)
-  }
-
-  const onTouchMove = (e: React.TouchEvent) => {
-    setTouchEnd(e.targetTouches[0].clientX)
-  }
-
-  const onTouchEnd = () => {
-    if (!touchStart || !touchEnd) return
-    const distance = touchStart - touchEnd
-    const isLeftSwipe = distance > minSwipeDistance
-    const isRightSwipe = distance < -minSwipeDistance
-    
-    if (isLeftSwipe && displayImages.length > 1) {
-      nextImage()
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault()
+    setClickStart({ x: e.clientX, y: e.clientY, time: Date.now() })
+    if (isZoomed) {
+      setIsDragging(true)
+      setDragStart({ x: e.clientX - panX, y: e.clientY - panY })
     }
-    if (isRightSwipe && displayImages.length > 1) {
-      prevImage()
+  }
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (isZoomed && isDragging) {
+      setPanX(e.clientX - dragStart.x)
+      setPanY(e.clientY - dragStart.y)
     }
+  }
+
+  const handleMouseUp = (e: React.MouseEvent) => {
+    if (!isZoomed && !isDragging) {
+      // Check if this was a click (not a drag)
+      const moveDistance = Math.sqrt(
+        Math.pow(e.clientX - clickStart.x, 2) + Math.pow(e.clientY - clickStart.y, 2)
+      )
+      const timeElapsed = Date.now() - clickStart.time
+      
+      if (moveDistance < 5 && timeElapsed < 300) {
+        // It's a click - toggle zoom
+        setIsZoomed(true)
+        setZoomScale(2.5)
+        setPanX(0)
+        setPanY(0)
+      }
+    } else if (isZoomed && !isDragging) {
+      // Click when zoomed - zoom out
+      const moveDistance = Math.sqrt(
+        Math.pow(e.clientX - clickStart.x, 2) + Math.pow(e.clientY - clickStart.y, 2)
+      )
+      const timeElapsed = Date.now() - clickStart.time
+      
+      if (moveDistance < 5 && timeElapsed < 300) {
+        setIsZoomed(false)
+        setZoomScale(1)
+        setPanX(0)
+        setPanY(0)
+      }
+    }
+    setIsDragging(false)
+  }
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 1) {
+      const touch = e.touches[0]
+      setClickStart({ x: touch.clientX, y: touch.clientY, time: Date.now() })
+      if (isZoomed) {
+        setIsDragging(true)
+        setDragStart({ x: touch.clientX - panX, y: touch.clientY - panY })
+      }
+    }
+  }
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (isZoomed && isDragging && e.touches.length === 1) {
+      const touch = e.touches[0]
+      setPanX(touch.clientX - dragStart.x)
+      setPanY(touch.clientY - dragStart.y)
+    }
+  }
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!isZoomed && !isDragging && e.changedTouches.length === 1) {
+      // Check if this was a tap (not a swipe)
+      const touch = e.changedTouches[0]
+      const moveDistance = Math.sqrt(
+        Math.pow(touch.clientX - clickStart.x, 2) + Math.pow(touch.clientY - clickStart.y, 2)
+      )
+      const timeElapsed = Date.now() - clickStart.time
+      
+      if (moveDistance < 10 && timeElapsed < 300) {
+        // It's a tap - toggle zoom
+        setIsZoomed(true)
+        setZoomScale(2.5)
+        setPanX(0)
+        setPanY(0)
+      }
+    } else if (isZoomed && !isDragging && e.changedTouches.length === 1) {
+      // Tap when zoomed - zoom out
+      const touch = e.changedTouches[0]
+      const moveDistance = Math.sqrt(
+        Math.pow(touch.clientX - clickStart.x, 2) + Math.pow(touch.clientY - clickStart.y, 2)
+      )
+      const timeElapsed = Date.now() - clickStart.time
+      
+      if (moveDistance < 10 && timeElapsed < 300) {
+        setIsZoomed(false)
+        setZoomScale(1)
+        setPanX(0)
+        setPanY(0)
+      }
+    }
+    setIsDragging(false)
   }
 
   return (
@@ -239,89 +317,62 @@ export default function ProductModal({
             </button>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
-              {/* Product Image Carousel */}
-              <div className="relative h-64 md:h-full bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">
+              {/* Product Image with Zoom */}
+              <div 
+                className="relative h-64 md:h-full bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden"
+                style={{ cursor: isZoomed ? (isDragging ? 'grabbing' : 'grab') : 'zoom-in' }}
+                onMouseDown={handleMouseDown}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseUp}
+                onMouseLeave={handleMouseUp}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+              >
                 {/* Image Container */}
-                <div 
-                  className="relative w-full h-full"
-                  onTouchStart={onTouchStart}
-                  onTouchMove={onTouchMove}
-                  onTouchEnd={onTouchEnd}
-                >
-                  {displayImages.length > 1 && isMounted ? (
-                    <AnimatePresence mode="wait">
-                      <motion.div
-                        key={currentImageIndex}
-                        initial={{ opacity: 0, x: 100 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -100 }}
-                        transition={{ duration: 0.3 }}
-                        className="absolute inset-0"
-                      >
-                        <Image
-                          src={displayImages[currentImageIndex] || product.image}
-                          alt={`${product.name} - Image ${currentImageIndex + 1}`}
-                          fill
-                          className="object-contain p-8"
-                        />
-                      </motion.div>
-                    </AnimatePresence>
-                  ) : (
-                    <div className="absolute inset-0">
-                      <Image
-                        src={displayImages[0] || product.image}
-                        alt={product.name}
-                        fill
-                        className="object-contain p-8"
-                      />
-                    </div>
-                  )}
+                <div className="relative w-full h-full">
+                  <motion.div
+                    animate={{
+                      scale: zoomScale,
+                      x: panX,
+                      y: panY,
+                    }}
+                    transition={{ duration: isZoomed ? 0.1 : 0.3 }}
+                    className="absolute inset-0 origin-center"
+                  >
+                    <Image
+                      src={displayImage || product.image}
+                      alt={product.name}
+                      fill
+                      className="object-contain p-8 select-none"
+                      draggable={false}
+                    />
+                  </motion.div>
                 </div>
 
-                {/* Navigation Arrows */}
-                {isMounted && displayImages.length > 1 && (
-                  <>
-                    <button
-                      onClick={prevImage}
-                      className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-black/50 rounded-full hover:bg-black/70 transition-colors z-10"
-                      aria-label="Previous image"
-                    >
-                      <ChevronLeft size={24} className="text-white" />
-                    </button>
-                    <button
-                      onClick={nextImage}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-black/50 rounded-full hover:bg-black/70 transition-colors z-10"
-                      aria-label="Next image"
-                    >
-                      <ChevronRight size={24} className="text-white" />
-                    </button>
-
-                    {/* Image Indicators */}
-                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10">
-                      {displayImages.map((_, index) => (
-                        <button
-                          key={index}
-                          onClick={() => setCurrentImageIndex(index)}
-                          className={`h-2 rounded-full transition-all ${
-                            currentImageIndex === index
-                              ? 'w-8 bg-black'
-                              : 'w-2 bg-black/50 hover:bg-black/70'
-                          }`}
-                          aria-label={`Go to image ${index + 1}`}
-                        />
-                      ))}
-                    </div>
-
-                    {/* Image Counter */}
-                    <div className="absolute top-4 right-4 px-3 py-1 bg-black/50 rounded-full text-white text-sm font-bold sketchy-font-alt z-10">
-                      {currentImageIndex + 1} / {displayImages.length}
-                    </div>
-                  </>
+                {/* Zoom Indicator */}
+                {isMounted && (
+                  <div className="absolute top-4 right-4 px-3 py-1 bg-black/50 rounded-full text-white text-sm font-bold sketchy-font-alt z-10 flex items-center gap-2">
+                    {isZoomed ? (
+                      <>
+                        <ZoomOut size={14} />
+                        <span>Click to zoom out</span>
+                      </>
+                    ) : (
+                      <>
+                        <ZoomIn size={14} />
+                        <span>Click to zoom</span>
+                      </>
+                    )}
+                  </div>
                 )}
-                
+
                 {/* Favorite Button */}
                 <button
-                  onClick={() => onToggleFavorite(product.id)}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onToggleFavorite(product.id)
+                  }}
                   className="absolute top-4 left-4 p-2 bg-black/50 rounded-full hover:bg-black/70 transition-colors z-10"
                 >
                   <Heart 
