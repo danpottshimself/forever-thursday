@@ -115,10 +115,7 @@ export default function ProductModal({
                   
                   <div className="flex items-center justify-between mb-8">
                     <span className="text-3xl lg:text-4xl font-bold text-black sketchy-font">
-                      ${product.price}
-                    </span>
-                    <span className="text-sm text-gray-500 uppercase tracking-wide bg-gray-100 px-3 py-1 rounded">
-                      {product.category.replace('-', ' ')}
+                      £{product.price.toFixed(2)}
                     </span>
                   </div>
                 </div>
@@ -173,7 +170,7 @@ export default function ProductModal({
                         className="flex-1 bg-gray-800 text-white font-bold py-4 px-4 rounded-lg hover:bg-gray-700 transition-all duration-300 sketchy-font-alt flex items-center justify-center gap-2 text-base whitespace-nowrap"
                       >
                         <ShoppingCart size={20} />
-                        <span>BUY NOW - ${(product.price * quantity).toFixed(2)}</span>
+                        <span>BUY NOW - £{(product.price * quantity).toFixed(2)}</span>
                       </button>
                     </>
                   )}

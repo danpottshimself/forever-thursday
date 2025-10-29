@@ -41,7 +41,7 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
           className="object-contain p-4"
         />
         <div className="absolute top-4 right-4 bg-black text-white px-2 py-1 rounded text-sm font-bold sketchy-font-alt">
-          ${product.price}
+          £{product.price.toFixed(2)}
         </div>
         {isSoldOut && (
           <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
@@ -56,11 +56,6 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
         <h3 className="text-xl font-bold mb-2 text-black sketchy-font-alt">{product.name}</h3>
         <p className="text-gray-600 mb-4 text-sm sketchy-font-alt">{product.description}</p>
         
-        <div className="flex items-center justify-between mb-4">
-          <span className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-600">
-            {product.category.replace('-', ' ')}
-          </span>
-        </div>
 
         {/* Action Buttons */}
         <div className="flex gap-2">

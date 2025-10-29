@@ -7,7 +7,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 
 export async function POST(request: NextRequest) {
   try {
-    const { amount, currency = 'usd' } = await request.json()
+    const { amount, currency = 'gbp' } = await request.json()
 
     if (!amount || amount <= 0) {
       return NextResponse.json(
@@ -20,14 +20,13 @@ export async function POST(request: NextRequest) {
     const amountInCents = Math.round(amount * 100)
 
     // Create Payment Intent with multiple payment methods
+    // Note: Cannot use both automatic_payment_methods and payment_method_types
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amountInCents,
       currency: currency.toLowerCase(),
       automatic_payment_methods: {
         enabled: true,
       },
-      // Enable specific payment methods
-      payment_method_types: ['card', 'klarna'],
     })
 
     return NextResponse.json({

@@ -116,10 +116,7 @@ export default function CartPage() {
                     </p>
                     <div className="flex items-center gap-4">
                       <span className="text-lg font-bold text-black sketchy-font">
-                        ${item.product.price}
-                      </span>
-                      <span className="text-xs text-gray-500 uppercase tracking-wide">
-                        {item.product.category.replace('-', ' ')}
+                        £{item.product.price.toFixed(2)}
                       </span>
                     </div>
                   </div>
@@ -181,7 +178,7 @@ export default function CartPage() {
                     {item.product.name} × {item.quantity}
                   </span>
                   <span className="sketchy-font-alt">
-                    ${(item.product.price * item.quantity).toFixed(2)}
+                    £{(item.product.price * item.quantity).toFixed(2)}
                   </span>
                 </div>
               ))}
@@ -193,7 +190,7 @@ export default function CartPage() {
                   TOTAL
                 </span>
                 <span className="text-2xl font-bold sketchy-font-alt">
-                  ${getCartTotal().toFixed(2)}
+                  £{getCartTotal().toFixed(2)}
                 </span>
               </div>
             </div>

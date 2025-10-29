@@ -90,7 +90,7 @@ function CheckoutForm() {
         className="w-full bg-black text-white font-bold py-4 px-6 rounded-lg hover:bg-gray-800 transition-colors duration-300 sketchy-font-alt disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
       >
         <Lock size={20} />
-        {isProcessing ? 'PROCESSING PAYMENT...' : `PAY $${getCartTotal().toFixed(2)}`}
+        {isProcessing ? 'PROCESSING PAYMENT...' : `PAY £${getCartTotal().toFixed(2)}`}
       </button>
 
       <p className="text-xs text-center text-gray-500">
@@ -120,7 +120,7 @@ export default function CheckoutPage() {
           },
           body: JSON.stringify({
             amount: getCartTotal(),
-            currency: 'usd',
+            currency: 'gbp',
           }),
         })
 
@@ -266,7 +266,7 @@ export default function CheckoutPage() {
                       <p className="text-sm text-gray-400">Qty: {item.quantity}</p>
                     </div>
                     <span className="sketchy-font-alt">
-                      ${(item.product.price * item.quantity).toFixed(2)}
+                      £{(item.product.price * item.quantity).toFixed(2)}
                     </span>
                   </div>
                 ))}
@@ -275,7 +275,7 @@ export default function CheckoutPage() {
               <div className="border-t border-gray-700 pt-4 space-y-2">
                 <div className="flex justify-between text-sm text-gray-400">
                   <span>Subtotal</span>
-                  <span>${getCartTotal().toFixed(2)}</span>
+                  <span>£{getCartTotal().toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm text-gray-400">
                   <span>Shipping</span>
