@@ -171,21 +171,14 @@ export async function fetchPrintfulProducts(): Promise<PrintfulProduct[]> {
               : []
             
             if (variants.length > 0) {
-              // Find lowest price from in-stock variants
-              const inStockVariants = variants.filter((v: any) => {
-                const status = v?.availability_status || v?.available || true
-                return status !== false && status !== 'discontinued'
-              })
+              // Find lowest price from all variants (Printful doesn't have 'in stock' concept)
+              const lowestPriceVariant = variants.reduce((lowest: any, current: any) => {
+                const currentPrice = Number.parseFloat(current?.retail_price || current?.price || '999999')
+                const lowestPrice = Number.parseFloat(lowest?.retail_price || lowest?.price || '999999')
+                return currentPrice < lowestPrice ? current : lowest
+              }, variants[0])
               
-              if (inStockVariants.length > 0) {
-                const lowestPriceVariant = inStockVariants.reduce((lowest: any, current: any) => {
-                  const currentPrice = Number.parseFloat(current?.retail_price || current?.price || '999999')
-                  const lowestPrice = Number.parseFloat(lowest?.retail_price || lowest?.price || '999999')
-                  return currentPrice < lowestPrice ? current : lowest
-                }, inStockVariants[0])
-                
-                price = Number.parseFloat(lowestPriceVariant?.retail_price || lowestPriceVariant?.price || '29.99')
-              }
+              price = Number.parseFloat(lowestPriceVariant?.retail_price || lowestPriceVariant?.price || '29.99')
             }
             
             // Update image if product details has better one
