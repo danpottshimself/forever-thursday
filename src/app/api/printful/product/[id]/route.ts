@@ -42,10 +42,30 @@ export async function GET(
       ? productData.variants
       : []
 
+    // Size ordering for proper sorting
+    const sizeOrder: { [key: string]: number } = {
+      'XS': 1,
+      'S': 2,
+      'M': 3,
+      'L': 4,
+      'XL': 5,
+      '2XL': 6,
+      'XXL': 6,
+      '3XL': 7,
+      'XXXL': 7,
+      '4XL': 8,
+      '5XL': 9,
+      'One Size': 99
+    }
+
+    const getSizeOrder = (size: string): number => {
+      return sizeOrder[size.toUpperCase()] || 999
+    }
+
     // Organize variants by size and color
     const organizedVariants: {
       sizes: string[]
-      colors: { name: string; variants: any[] }[]
+      colors: { name: string; variants: any[]; images: string[] }[]
       allVariants: any[]
     } = {
       sizes: [],
@@ -54,7 +74,7 @@ export async function GET(
     }
 
     const sizeSet = new Set<string>()
-    const colorMap = new Map<string, any[]>()
+    const colorMap = new Map<string, { variants: any[], images: Set<string> }>()
 
     variants.forEach((variant: any) => {
       const size = variant.size || 'One Size'
@@ -63,20 +83,53 @@ export async function GET(
       sizeSet.add(size)
       
       if (!colorMap.has(color)) {
-        colorMap.set(color, [])
+        colorMap.set(color, { variants: [], images: new Set() })
       }
-      colorMap.get(color)!.push(variant)
+      const colorData = colorMap.get(color)!
+      colorData.variants.push(variant)
+      
+      // Collect images from variant
+      if (variant.files && Array.isArray(variant.files)) {
+        variant.files.forEach((file: any) => {
+          if (file.preview_url) colorData.images.add(file.preview_url)
+          if (file.url) colorData.images.add(file.url)
+        })
+      }
+      if (variant.image) {
+        colorData.images.add(variant.image)
+      }
+      if (variant.thumbnail_url) {
+        colorData.images.add(variant.thumbnail_url)
+      }
     })
 
-    organizedVariants.sizes = Array.from(sizeSet).sort()
-    organizedVariants.colors = Array.from(colorMap.entries()).map(([name, vars]) => ({
+    // Sort sizes using custom order
+    organizedVariants.sizes = Array.from(sizeSet).sort((a, b) => {
+      const orderA = getSizeOrder(a)
+      const orderB = getSizeOrder(b)
+      if (orderA !== orderB) return orderA - orderB
+      return a.localeCompare(b)
+    })
+
+    organizedVariants.colors = Array.from(colorMap.entries()).map(([name, data]) => ({
       name,
-      variants: vars
+      variants: data.variants,
+      images: Array.from(data.images)
     }))
+
+    // Also include product-level images
+    const productImages: string[] = []
+    if (productData.images && Array.isArray(productData.images)) {
+      productImages.push(...productData.images.map((img: any) => img.url || img))
+    }
+    if (productData.thumbnail_url) {
+      productImages.push(productData.thumbnail_url)
+    }
 
     return NextResponse.json({
       product: productData,
-      variants: organizedVariants
+      variants: organizedVariants,
+      images: productImages
     })
   } catch (error: any) {
     console.error('Error fetching Printful product:', error)

@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { Product } from '@/types'
-import { X, Plus, Minus, ShoppingCart, Heart, Star } from 'lucide-react'
+import { X, Plus, Minus, ShoppingCart, Heart, Star, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useCart } from '@/contexts/CartContext'
 
 interface ProductModalProps {
@@ -30,6 +30,9 @@ export default function ProductModal({
   const [selectedVariant, setSelectedVariant] = useState<any>(null)
   const [variantPrice, setVariantPrice] = useState<number | null>(null)
   const [loadingVariants, setLoadingVariants] = useState(false)
+  const [productImages, setProductImages] = useState<string[]>([])
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [displayImages, setDisplayImages] = useState<string[]>([])
 
   // Check if this is a Printful product
   const isPrintfulProduct = product?.id?.startsWith('printful-') || false
@@ -44,18 +47,38 @@ export default function ProductModal({
         .then(data => {
           if (data.variants) {
             setVariants(data.variants)
+            // Store product-level images
+            if (data.images && Array.isArray(data.images)) {
+              setProductImages(data.images)
+            }
             // Auto-select first size and color if available
             if (data.variants.sizes.length > 0) {
               setSelectedSize(data.variants.sizes[0])
             }
             if (data.variants.colors.length > 0) {
-              setSelectedColor(data.variants.colors[0].name)
+              const firstColor = data.variants.colors[0].name
+              setSelectedColor(firstColor)
+              // Set initial images from first color
+              if (data.variants.colors[0].images && data.variants.colors[0].images.length > 0) {
+                setDisplayImages(data.variants.colors[0].images)
+              } else if (data.images && data.images.length > 0) {
+                setDisplayImages(data.images)
+              } else {
+                setDisplayImages([product?.image || ''])
+              }
               // Set initial variant and price
               const firstColorVariants = data.variants.colors[0].variants
               if (firstColorVariants.length > 0) {
                 const firstVariant = firstColorVariants[0]
                 setSelectedVariant(firstVariant)
                 setVariantPrice(Number.parseFloat(firstVariant.retail_price || firstVariant.price || product?.price || 0))
+              }
+            } else {
+              // No colors, use product images
+              if (data.images && data.images.length > 0) {
+                setDisplayImages(data.images)
+              } else {
+                setDisplayImages([product?.image || ''])
               }
             }
           }
@@ -73,8 +96,33 @@ export default function ProductModal({
       setSelectedVariant(null)
       setVariantPrice(null)
       setQuantity(1)
+      setProductImages([])
+      setCurrentImageIndex(0)
+      setDisplayImages([product?.image || ''])
+    } else if (isOpen && !isPrintfulProduct && product) {
+      // For non-Printful products, just use the product image
+      setDisplayImages([product.image])
+      setCurrentImageIndex(0)
     }
   }, [isOpen, isPrintfulProduct, printfulProductId, product])
+
+  // Update images when color changes
+  useEffect(() => {
+    if (variants && selectedColor) {
+      const colorGroup = variants.colors.find((c: any) => c.name === selectedColor)
+      if (colorGroup) {
+        // Update images for selected color
+        if (colorGroup.images && colorGroup.images.length > 0) {
+          setDisplayImages(colorGroup.images)
+        } else if (productImages.length > 0) {
+          setDisplayImages(productImages)
+        } else {
+          setDisplayImages([product?.image || ''])
+        }
+        setCurrentImageIndex(0)
+      }
+    }
+  }, [selectedColor, variants, productImages, product])
 
   // Update selected variant when size or color changes
   useEffect(() => {
@@ -121,6 +169,42 @@ export default function ProductModal({
     setQuantity(prev => Math.max(prev - 1, 1)) // Min 1
   }
 
+  const nextImage = () => {
+    setCurrentImageIndex((prev) => (prev + 1) % displayImages.length)
+  }
+
+  const prevImage = () => {
+    setCurrentImageIndex((prev) => (prev - 1 + displayImages.length) % displayImages.length)
+  }
+
+  const [touchStart, setTouchStart] = useState<number | null>(null)
+  const [touchEnd, setTouchEnd] = useState<number | null>(null)
+
+  const minSwipeDistance = 50
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null)
+    setTouchStart(e.targetTouches[0].clientX)
+  }
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX)
+  }
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return
+    const distance = touchStart - touchEnd
+    const isLeftSwipe = distance > minSwipeDistance
+    const isRightSwipe = distance < -minSwipeDistance
+    
+    if (isLeftSwipe && displayImages.length > 1) {
+      nextImage()
+    }
+    if (isRightSwipe && displayImages.length > 1) {
+      prevImage()
+    }
+  }
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -147,19 +231,90 @@ export default function ProductModal({
             </button>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
-              {/* Product Image */}
-              <div className="relative h-64 md:h-full bg-gradient-to-br from-gray-100 to-gray-200">
-                <Image
-                  src={product.image}
-                  alt={product.name}
-                  fill
-                  className="object-contain p-8"
-                />
+              {/* Product Image Carousel */}
+              <div className="relative h-64 md:h-full bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">
+                {displayImages.length > 0 ? (
+                  <>
+                    {/* Image Container */}
+                    <div 
+                      className="relative w-full h-full"
+                      onTouchStart={onTouchStart}
+                      onTouchMove={onTouchMove}
+                      onTouchEnd={onTouchEnd}
+                    >
+                      <AnimatePresence mode="wait">
+                        <motion.div
+                          key={currentImageIndex}
+                          initial={{ opacity: 0, x: 100 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: -100 }}
+                          transition={{ duration: 0.3 }}
+                          className="absolute inset-0"
+                        >
+                          <Image
+                            src={displayImages[currentImageIndex] || product.image}
+                            alt={`${product.name} - Image ${currentImageIndex + 1}`}
+                            fill
+                            className="object-contain p-8"
+                          />
+                        </motion.div>
+                      </AnimatePresence>
+                    </div>
+
+                    {/* Navigation Arrows */}
+                    {displayImages.length > 1 && (
+                      <>
+                        <button
+                          onClick={prevImage}
+                          className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-black/50 rounded-full hover:bg-black/70 transition-colors z-10"
+                          aria-label="Previous image"
+                        >
+                          <ChevronLeft size={24} className="text-white" />
+                        </button>
+                        <button
+                          onClick={nextImage}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-black/50 rounded-full hover:bg-black/70 transition-colors z-10"
+                          aria-label="Next image"
+                        >
+                          <ChevronRight size={24} className="text-white" />
+                        </button>
+
+                        {/* Image Indicators */}
+                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+                          {displayImages.map((_, index) => (
+                            <button
+                              key={index}
+                              onClick={() => setCurrentImageIndex(index)}
+                              className={`h-2 rounded-full transition-all ${
+                                currentImageIndex === index
+                                  ? 'w-8 bg-black'
+                                  : 'w-2 bg-black/50 hover:bg-black/70'
+                              }`}
+                              aria-label={`Go to image ${index + 1}`}
+                            />
+                          ))}
+                        </div>
+
+                        {/* Image Counter */}
+                        <div className="absolute top-4 right-4 px-3 py-1 bg-black/50 rounded-full text-white text-sm font-bold sketchy-font-alt z-10">
+                          {currentImageIndex + 1} / {displayImages.length}
+                        </div>
+                      </>
+                    )}
+                  </>
+                ) : (
+                  <Image
+                    src={product.image}
+                    alt={product.name}
+                    fill
+                    className="object-contain p-8"
+                  />
+                )}
                 
                 {/* Favorite Button */}
                 <button
                   onClick={() => onToggleFavorite(product.id)}
-                  className="absolute top-4 left-4 p-2 bg-black/50 rounded-full hover:bg-black/70 transition-colors"
+                  className="absolute top-4 left-4 p-2 bg-black/50 rounded-full hover:bg-black/70 transition-colors z-10"
                 >
                   <Heart 
                     size={20} 
@@ -168,7 +323,7 @@ export default function ProductModal({
                 </button>
 
                 {/* Rating Stars */}
-                <div className="absolute bottom-4 left-4 flex gap-1">
+                <div className="absolute bottom-4 left-4 flex gap-1 z-10">
                   {new Array(5).fill(0).map((_, i) => (
                     <Star 
                       key={`star-${i}`} 
