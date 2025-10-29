@@ -58,7 +58,13 @@ export default function ProductModal({
   useEffect(() => {
     if (isOpen && isPrintfulProduct && printfulProductId) {
       setLoadingVariants(true)
-      fetch(`/api/printful/product/${printfulProductId}`)
+      // Add cache-busting timestamp to force fresh fetch
+      fetch(`/api/printful/product/${printfulProductId}?t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+        }
+      })
         .then(res => res.json())
         .then(data => {
           if (data.variants) {
