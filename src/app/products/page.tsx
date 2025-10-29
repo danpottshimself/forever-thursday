@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion'
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
+import { RefreshCw } from 'lucide-react'
 import ProductCard from '@/components/ProductCard'
 import ProductModal from '@/components/ProductModal'
 import { products } from '@/lib/data'
@@ -38,28 +39,36 @@ export default function ProductsPage() {
     })
   }
 
-  useEffect(() => {
-    const fetchPrintfulProducts = async () => {
-      try {
-        const response = await fetch('/api/printful')
-        const data = await response.json()
-        console.log('Printful API response:', data)
-        
-        if (!response.ok) {
-          setPrintfulError(data.error || data.details || 'Failed to fetch products')
-          console.error('Printful API error:', data)
-        } else {
-          setPrintfulProducts(data.products || [])
-          console.log('Printful products loaded:', data.products?.length || 0)
+  const fetchPrintfulProducts = async () => {
+    setIsLoadingPrintful(true)
+    setPrintfulError(null)
+    try {
+      // Add cache-busting timestamp to force fresh fetch
+      const response = await fetch(`/api/printful?t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
         }
-      } catch (error) {
-        console.error('Error fetching Printful products:', error)
-        setPrintfulError('Failed to connect to Printful API')
-      } finally {
-        setIsLoadingPrintful(false)
+      })
+      const data = await response.json()
+      console.log('Printful API response:', data)
+      
+      if (!response.ok) {
+        setPrintfulError(data.error || data.details || 'Failed to fetch products')
+        console.error('Printful API error:', data)
+      } else {
+        setPrintfulProducts(data.products || [])
+        console.log('Printful products loaded:', data.products?.length || 0)
       }
+    } catch (error) {
+      console.error('Error fetching Printful products:', error)
+      setPrintfulError('Failed to connect to Printful API')
+    } finally {
+      setIsLoadingPrintful(false)
     }
+  }
 
+  useEffect(() => {
     fetchPrintfulProducts()
   }, [])
 
@@ -101,9 +110,22 @@ export default function ProductsPage() {
             transition={{ duration: 0.8, delay: 0.3 }}
             className="mb-12"
           >
-            <h2 className="text-3xl md:text-4xl font-bold text-center mb-8 sketchy-font-alt">
-              <span className="text-black">CUSTOM</span> MERCH
-            </h2>
+            <div className="flex items-center justify-center gap-4 mb-8">
+              <h2 className="text-3xl md:text-4xl font-bold text-center sketchy-font-alt">
+                <span className="text-black">CUSTOM</span> MERCH
+              </h2>
+              <button
+                onClick={fetchPrintfulProducts}
+                disabled={isLoadingPrintful}
+                className="p-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Refresh products"
+              >
+                <RefreshCw 
+                  size={20} 
+                  className={isLoadingPrintful ? 'animate-spin' : ''}
+                />
+              </button>
+            </div>
           </motion.div>
           
           {isLoadingPrintful ? (

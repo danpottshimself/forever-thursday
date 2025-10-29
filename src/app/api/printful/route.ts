@@ -1,7 +1,11 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { fetchPrintfulProducts } from '@/lib/printful'
 
-export async function GET() {
+// Disable caching for this route
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
+export async function GET(request: NextRequest) {
   try {
     console.log('Printful API route called')
     
@@ -17,13 +21,21 @@ export async function GET() {
     const products = await fetchPrintfulProducts()
     console.log('Printful products fetched successfully:', products.length)
     
-    return NextResponse.json({ products })
+    // Add cache control headers to prevent caching
+    const response = NextResponse.json({ products })
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+    response.headers.set('Pragma', 'no-cache')
+    response.headers.set('Expires', '0')
+    
+    return response
   } catch (error) {
     console.error('Error in printful API route:', error)
-    return NextResponse.json(
+    const response = NextResponse.json(
       { error: 'Failed to fetch products', products: [], details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     )
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+    return response
   }
 }
 

@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+// Disable caching for this route
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -17,22 +21,22 @@ export async function GET(
     const { id: productId } = await params
     
     // Fetch product details including variants
-    const response = await fetch(`https://api.printful.com/store/products/${productId}`, {
+    const printfulResponse = await fetch(`https://api.printful.com/store/products/${productId}`, {
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json'
       }
     })
 
-    if (!response.ok) {
-      const errorText = await response.text()
+    if (!printfulResponse.ok) {
+      const errorText = await printfulResponse.text()
       return NextResponse.json(
         { error: `Failed to fetch product: ${errorText}` },
-        { status: response.status }
+        { status: printfulResponse.status }
       )
     }
 
-    const data = await response.json()
+    const data = await printfulResponse.json()
     const productData = data.result || data
 
     // Extract variants
@@ -172,12 +176,19 @@ export async function GET(
     // Also include sync_product.thumbnail_url in the response for easy access
     const thumbnailUrl = productData.sync_product?.thumbnail_url || productData.thumbnail_url || null
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       product: productData,
       variants: organizedVariants,
       images: productImages,
       thumbnailUrl: thumbnailUrl
     })
+    
+    // Add cache control headers to prevent caching
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+    response.headers.set('Pragma', 'no-cache')
+    response.headers.set('Expires', '0')
+    
+    return response
   } catch (error: any) {
     console.error('Error fetching Printful product:', error)
     return NextResponse.json(
