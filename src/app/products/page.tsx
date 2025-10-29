@@ -92,6 +92,60 @@ export default function ProductsPage() {
         </div>
       </section>
 
+      {/* Custom Merch Section - Printful Products */}
+      <section className="py-16 px-4 bg-gray-50">
+        <div className="max-w-6xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.3 }}
+            className="mb-12"
+          >
+            <h2 className="text-3xl md:text-4xl font-bold text-center mb-8 sketchy-font-alt">
+              <span className="text-black">CUSTOM</span> MERCH
+            </h2>
+          </motion.div>
+          
+          {isLoadingPrintful ? (
+            <div className="text-center py-12">
+              <div className="inline-block animate-pulse">
+                <div className="h-12 w-48 bg-gray-300 rounded mx-auto"></div>
+              </div>
+            </div>
+          ) : printfulError ? (
+            <div className="text-center py-12 bg-red-50 border border-red-200 rounded-lg p-6">
+              <p className="text-red-600 font-bold sketchy-font-alt mb-2">API Error</p>
+              <p className="text-red-500 text-sm sketchy-font-alt">{printfulError}</p>
+              <p className="text-gray-500 text-xs mt-4 sketchy-font-alt">
+                Make sure to add your PRINTFUL_API_KEY to Vercel environment variables
+              </p>
+            </div>
+          ) : printfulProducts.length === 0 ? (
+            <div className="text-center py-12 bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+              <p className="text-yellow-600 font-bold sketchy-font-alt">
+                No custom merch available
+              </p>
+              <p className="text-gray-500 text-sm mt-2 sketchy-font-alt">
+                Add products to see them here
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {printfulProducts.map((product, index) => (
+                <motion.div
+                  key={product.id}
+                  initial={{ opacity: 0, y: 50 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: 0.1 * index }}
+                >
+                  <ProductCard product={product} onClick={openModal} />
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
       {/* Products Grid */}
       <section className="py-16 px-4">
         <div className="max-w-6xl mx-auto">
@@ -120,61 +174,6 @@ export default function ProductsPage() {
             ))}
           </div>
           
-        </div>
-      </section>
-
-      {/* T-Shirts Section from Printful */}
-      <section className="py-16 px-4 bg-gray-50">
-        <div className="max-w-6xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.3 }}
-            className="mb-12"
-          >
-            <h2 className="text-3xl md:text-4xl font-bold text-center mb-8 sketchy-font-alt">
-              <span className="text-black">SHOP</span> T-SHIRTS{' '}
-              <span className="text-black">FROM PRINTFUL</span>
-            </h2>
-          </motion.div>
-          
-          {isLoadingPrintful ? (
-            <div className="text-center py-12">
-              <div className="inline-block animate-pulse">
-                <div className="h-12 w-48 bg-gray-300 rounded mx-auto"></div>
-              </div>
-            </div>
-          ) : printfulError ? (
-            <div className="text-center py-12 bg-red-50 border border-red-200 rounded-lg p-6">
-              <p className="text-red-600 font-bold sketchy-font-alt mb-2">Printful API Error</p>
-              <p className="text-red-500 text-sm sketchy-font-alt">{printfulError}</p>
-              <p className="text-gray-500 text-xs mt-4 sketchy-font-alt">
-                Make sure to add your PRINTFUL_API_KEY to Vercel environment variables
-              </p>
-            </div>
-          ) : printfulProducts.length === 0 ? (
-            <div className="text-center py-12 bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-              <p className="text-yellow-600 font-bold sketchy-font-alt">
-                No T-shirts available from Printful
-              </p>
-              <p className="text-gray-500 text-sm mt-2 sketchy-font-alt">
-                Add products to your Printful store to see them here
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {printfulProducts.map((product, index) => (
-                <motion.div
-                  key={product.id}
-                  initial={{ opacity: 0, y: 50 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: 0.1 * index }}
-                >
-                  <ProductCard product={product} onClick={openModal} />
-                </motion.div>
-              ))}
-            </div>
-          )}
         </div>
       </section>
 

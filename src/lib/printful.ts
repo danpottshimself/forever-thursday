@@ -61,15 +61,12 @@ export async function fetchPrintfulProducts(): Promise<PrintfulProduct[]> {
       return []
     }
 
-    // Encode API key for Basic auth
-    const base64Key = Buffer.from(apiKey).toString('base64')
-    
     console.log('Fetching from Printful store/products endpoint...')
     
-    // Try store/products endpoint first
+    // Try store/products endpoint first with Bearer auth
     const storeResponse = await fetch('https://api.printful.com/store/products', {
       headers: {
-        'Authorization': `Basic ${base64Key}`,
+        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json'
       }
     })
@@ -84,7 +81,7 @@ export async function fetchPrintfulProducts(): Promise<PrintfulProduct[]> {
       // Try sync/products as fallback
       response = await fetch('https://api.printful.com/sync/products', {
         headers: {
-          'Authorization': `Basic ${base64Key}`,
+          'Authorization': `Bearer ${apiKey}`,
           'Content-Type': 'application/json'
         }
       })
@@ -99,16 +96,38 @@ export async function fetchPrintfulProducts(): Promise<PrintfulProduct[]> {
 
     data = await response.json()
     console.log('Printful API response:', JSON.stringify(data, null, 2))
+    console.log('Response has result?:', !!data.result)
+    console.log('Response has items?:', !!data.result?.items)
+    console.log('Items array length:', data.result?.items?.length || 0)
 
-    if (!data?.result?.items) {
-      console.error('Invalid Printful response format')
+    // Handle different response formats
+    let items: any[] = []
+    const responseData = data as any
+    if (responseData.result?.items && Array.isArray(responseData.result.items)) {
+      items = responseData.result.items
+    } else if (Array.isArray(responseData.result)) {
+      items = responseData.result
+    } else if (Array.isArray(responseData)) {
+      items = responseData
+    } else if (responseData.items && Array.isArray(responseData.items)) {
+      items = responseData.items
+    }
+    
+    console.log('Total Printful products found:', items.length)
+    
+    if (items.length === 0) {
+      console.warn('No products found in response. Response structure:', {
+        hasResult: !!responseData.result,
+        hasItems: !!responseData.items,
+        isArray: Array.isArray(responseData),
+        resultIsArray: Array.isArray(responseData.result),
+        keys: Object.keys(responseData)
+      })
       return []
     }
-
-    console.log('Total Printful products:', data.result.items.length)
     
     // Transform ALL Printful products - don't filter
-    const products: PrintfulProduct[] = data.result.items.map(item => {
+    const products: PrintfulProduct[] = items.map(item => {
       console.log(`Product ${item.id}: type=${item.type}, category=${item.main_category_id}`)
       
       // Get the main image
@@ -117,20 +136,20 @@ export async function fetchPrintfulProducts(): Promise<PrintfulProduct[]> {
         : '/images/print-placeholder.svg'
       
       // Get the lowest priced variant
-      const lowestPriceVariant = item.variants
-        .filter(v => v.availability_status === 'in_stock')
-        .reduce((lowest, current) => 
+      const lowestPriceVariant = (item.variants || [])
+        .filter((v: any) => v.availability_status === 'in_stock')
+        .reduce((lowest: any, current: any) => 
           Number.parseFloat(current.retail_price || current.price) < Number.parseFloat(lowest.retail_price || lowest.price) 
             ? current 
             : lowest
-        , item.variants[0])
+        , item.variants?.[0])
 
       const price = Number.parseFloat(lowestPriceVariant?.retail_price || lowestPriceVariant?.price || '29.99')
 
       return {
         id: `printful-${item.id}`,
         name: item.name,
-        description: item.description || 'Custom t-shirt from Forever February',
+        description: item.description || 'Custom merch from Forever February',
         price: price,
         image: mainImage,
         category: 'tshirts' as const
