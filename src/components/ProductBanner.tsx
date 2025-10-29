@@ -17,6 +17,11 @@ export default function ProductBanner({ products }: ProductBannerProps) {
   const [showSuccess, setShowSuccess] = useState<string | null>(null)
 
   const handleAddToCart = (product: Product) => {
+    // Don't add sold out products
+    if (product.isSoldOut) {
+      return
+    }
+    
     addToCart(product)
     
     // Show success message

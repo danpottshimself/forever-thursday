@@ -54,13 +54,15 @@ interface PrintfulResponse {
 
 export async function fetchPrintfulProducts(): Promise<PrintfulProduct[]> {
   try {
-    const apiKey = process.env.PRINTFUL_API_KEY
+    const apiKey = process.env.PRINTFUL_API_KEY?.trim()
     
     if (!apiKey) {
-      console.error('PRINTFUL_API_KEY is not set')
-      return []
+      console.error('PRINTFUL_API_KEY is not set in environment variables')
+      throw new Error('PRINTFUL_API_KEY environment variable is not configured')
     }
 
+    // Log that key exists (but not the actual key for security)
+    console.log('PRINTFUL_API_KEY is set (length:', apiKey.length, 'characters, starts with:', apiKey.substring(0, 3) + '...')
     console.log('Fetching from Printful store/products endpoint...')
     
     // Try store/products endpoint first with Bearer auth
@@ -77,8 +79,19 @@ export async function fetchPrintfulProducts(): Promise<PrintfulProduct[]> {
     let data: PrintfulResponse
 
     if (!storeResponse.ok && storeResponse.status === 401) {
+      const errorData = await storeResponse.json().catch(() => ({ message: 'Unauthorized' }))
+      console.error('401 Unauthorized - Invalid API key. Error:', errorData)
+      
+      // Don't try sync/products if auth failed - same key will fail there too
+      throw new Error(`Invalid Printful API key: ${errorData.result || errorData.message || 'Unauthorized'}`)
+    }
+
+    if (!storeResponse.ok) {
+      const errorText = await storeResponse.text()
+      console.error('Failed to fetch Printful products:', storeResponse.status, errorText)
+      
+      // Try sync/products as fallback for non-401 errors
       console.log('store/products failed, trying sync/products...')
-      // Try sync/products as fallback
       response = await fetch('https://api.printful.com/sync/products', {
         headers: {
           'Authorization': `Bearer ${apiKey}`,
@@ -86,12 +99,12 @@ export async function fetchPrintfulProducts(): Promise<PrintfulProduct[]> {
         }
       })
       console.log('Sync products response status:', response.status)
-    }
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error('Failed to fetch Printful products:', response.status, errorText)
-      return []
+      
+      if (!response.ok) {
+        const syncErrorText = await response.text()
+        console.error('Sync products also failed:', response.status, syncErrorText)
+        throw new Error(`Failed to fetch products: ${response.status} - ${syncErrorText}`)
+      }
     }
 
     data = await response.json()
