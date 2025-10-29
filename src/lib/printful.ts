@@ -139,35 +139,77 @@ export async function fetchPrintfulProducts(): Promise<PrintfulProduct[]> {
       return []
     }
     
-    // Transform ALL Printful products - don't filter
-    const products: PrintfulProduct[] = items.map(item => {
-      console.log(`Product ${item.id}: type=${item.type}, category=${item.main_category_id}`)
-      
-      // Get the main image
-      const mainImage = item.images?.length > 0 
-        ? item.images[0].url 
-        : '/images/print-placeholder.svg'
-      
-      // Get the lowest priced variant
-      const lowestPriceVariant = (item.variants || [])
-        .filter((v: any) => v.availability_status === 'in_stock')
-        .reduce((lowest: any, current: any) => 
-          Number.parseFloat(current.retail_price || current.price) < Number.parseFloat(lowest.retail_price || lowest.price) 
-            ? current 
-            : lowest
-        , item.variants?.[0])
+    // Transform ALL Printful products
+    // Note: items contains products with variants as a count (number), not array
+    // Fetch product details for accurate pricing
+    const products: PrintfulProduct[] = await Promise.all(
+      items.map(async (item: any) => {
+        console.log(`Processing product ${item.id}: name=${item.name}, variants count=${item.variants}`)
+        
+        // Use thumbnail_url from the product
+        let mainImage = item.thumbnail_url || '/images/print-placeholder.svg'
+        
+        // Try to fetch product details for pricing
+        let price = 29.99 // Default price
+        try {
+          const productDetailResponse = await fetch(`https://api.printful.com/store/products/${item.id}`, {
+            headers: {
+              'Authorization': `Bearer ${apiKey}`,
+              'Content-Type': 'application/json'
+            }
+          })
+          
+          if (productDetailResponse.ok) {
+            const productDetail = await productDetailResponse.json()
+            const productData = productDetail.result || productDetail
+            
+            // Get variants array from product details
+            const variants = Array.isArray(productData.sync_variants) 
+              ? productData.sync_variants 
+              : Array.isArray(productData.variants)
+              ? productData.variants
+              : []
+            
+            if (variants.length > 0) {
+              // Find lowest price from in-stock variants
+              const inStockVariants = variants.filter((v: any) => {
+                const status = v?.availability_status || v?.available || true
+                return status !== false && status !== 'discontinued'
+              })
+              
+              if (inStockVariants.length > 0) {
+                const lowestPriceVariant = inStockVariants.reduce((lowest: any, current: any) => {
+                  const currentPrice = Number.parseFloat(current?.retail_price || current?.price || '999999')
+                  const lowestPrice = Number.parseFloat(lowest?.retail_price || lowest?.price || '999999')
+                  return currentPrice < lowestPrice ? current : lowest
+                }, inStockVariants[0])
+                
+                price = Number.parseFloat(lowestPriceVariant?.retail_price || lowestPriceVariant?.price || '29.99')
+              }
+            }
+            
+            // Update image if product details has better one
+            if (productData.thumbnail_url) {
+              mainImage = productData.thumbnail_url
+            } else if (productData.images?.length > 0) {
+              mainImage = productData.images[0].url || productData.images[0]
+            }
+          }
+        } catch (err) {
+          console.warn(`Could not fetch details for product ${item.id}:`, err)
+          // Continue with default price
+        }
 
-      const price = Number.parseFloat(lowestPriceVariant?.retail_price || lowestPriceVariant?.price || '29.99')
-
-      return {
-        id: `printful-${item.id}`,
-        name: item.name,
-        description: item.description || 'Custom merch from Forever February',
-        price: price,
-        image: mainImage,
-        category: 'tshirts' as const
-      }
-    })
+        return {
+          id: `printful-${item.id}`,
+          name: item.name,
+          description: item.description || `Custom ${item.name} from Forever February`,
+          price: price,
+          image: mainImage,
+          category: 'tshirts' as const
+        }
+      })
+    )
 
     console.log('Transformed Printful products:', products.length)
     return products
