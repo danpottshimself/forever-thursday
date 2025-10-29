@@ -88,7 +88,10 @@ export async function GET(
       const colorData = colorMap.get(color)!
       colorData.variants.push(variant)
       
-      // Collect images from variant
+      // Collect images from variant - prioritize thumbnail_url
+      if (variant.thumbnail_url) {
+        colorData.images.add(variant.thumbnail_url)
+      }
       if (variant.files && Array.isArray(variant.files)) {
         variant.files.forEach((file: any) => {
           if (file.preview_url) colorData.images.add(file.preview_url)
@@ -97,9 +100,6 @@ export async function GET(
       }
       if (variant.image) {
         colorData.images.add(variant.image)
-      }
-      if (variant.thumbnail_url) {
-        colorData.images.add(variant.thumbnail_url)
       }
     })
 
@@ -117,13 +117,13 @@ export async function GET(
       images: Array.from(data.images)
     }))
 
-    // Also include product-level images
+    // Also include product-level images - prioritize thumbnail_url
     const productImages: string[] = []
-    if (productData.images && Array.isArray(productData.images)) {
-      productImages.push(...productData.images.map((img: any) => img.url || img))
-    }
     if (productData.thumbnail_url) {
       productImages.push(productData.thumbnail_url)
+    }
+    if (productData.images && Array.isArray(productData.images)) {
+      productImages.push(...productData.images.map((img: any) => img.url || img))
     }
 
     return NextResponse.json({

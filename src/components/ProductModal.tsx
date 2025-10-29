@@ -73,9 +73,11 @@ export default function ProductModal({
             if (data.variants.colors.length > 0) {
               const firstColor = data.variants.colors[0].name
               setSelectedColor(firstColor)
-              // Set initial image from first color
-              if (data.variants.colors[0].images && data.variants.colors[0].images.length > 0) {
-                setDisplayImage(data.variants.colors[0].images[0])
+              // Set initial image from first color - prefer thumbnail
+              const firstColorImages = data.variants.colors[0].images || []
+              if (firstColorImages.length > 0) {
+                // Use first image (should be thumbnail_url if prioritized correctly)
+                setDisplayImage(firstColorImages[0])
               } else if (data.images && data.images.length > 0) {
                 setDisplayImage(data.images[0])
               } else {
@@ -128,9 +130,10 @@ export default function ProductModal({
     if (variants && selectedColor) {
       const colorGroup = variants.colors.find((c: any) => c.name === selectedColor)
       if (colorGroup) {
-        // Update image for selected color (use first image)
-        if (colorGroup.images && colorGroup.images.length > 0) {
-          setDisplayImage(colorGroup.images[0])
+        // Update image for selected color - prefer thumbnail (first image should be thumbnail)
+        const colorImages = colorGroup.images || []
+        if (colorImages.length > 0) {
+          setDisplayImage(colorImages[0])
         } else if (productImages.length > 0) {
           setDisplayImage(productImages[0])
         } else {
