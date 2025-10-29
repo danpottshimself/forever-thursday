@@ -7,6 +7,12 @@ export interface Product {
   category: 'pillow-sprays' | 'wax-melts' | 'prints' | 'tshirts'
   stripePriceId?: string
   isSoldOut?: boolean
+  variant?: {
+    variantId: number
+    size?: string
+    color?: string
+    price: number
+  }
 }
 
 export interface CartItem {

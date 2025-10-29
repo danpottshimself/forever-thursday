@@ -9,7 +9,8 @@ import Link from 'next/link'
 import { useCart } from '@/contexts/CartContext'
 import { ArrowLeft, Lock } from 'lucide-react'
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
+const stripePublishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || ''
+const stripePromise = stripePublishableKey ? loadStripe(stripePublishableKey) : null
 
 function CheckoutForm() {
   const stripe = useStripe()
@@ -238,10 +239,14 @@ export default function CheckoutPage() {
                 PAYMENT DETAILS
               </h2>
               
-              {clientSecret && (
+              {clientSecret && stripePromise ? (
                 <Elements options={options} stripe={stripePromise}>
                   <CheckoutForm />
                 </Elements>
+              ) : (
+                <div className="bg-yellow-50 border border-yellow-200 text-yellow-600 px-4 py-3 rounded-lg text-sm">
+                  Stripe is not configured. Please set NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY environment variable.
+                </div>
               )}
             </div>
           </motion.div>

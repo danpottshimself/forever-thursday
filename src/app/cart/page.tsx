@@ -111,6 +111,13 @@ export default function CartPage() {
                     <h3 className="text-xl font-bold text-black mb-2 sketchy-font-alt">
                       {item.product.name}
                     </h3>
+                    {item.product.variant && (
+                      <p className="text-xs text-gray-500 mb-1 sketchy-font-alt">
+                        {item.product.variant.size && item.product.variant.color 
+                          ? `${item.product.variant.size} - ${item.product.variant.color}`
+                          : item.product.variant.size || item.product.variant.color || ''}
+                      </p>
+                    )}
                     <p className="text-gray-600 text-sm mb-2 sketchy-font-alt">
                       {item.product.description}
                     </p>

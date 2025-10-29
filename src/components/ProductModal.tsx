@@ -1,7 +1,7 @@
 'use client'
 
 import { motion, AnimatePresence } from 'framer-motion'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { Product } from '@/types'
 import { X, Plus, Minus, ShoppingCart, Heart, Star } from 'lucide-react'
@@ -24,14 +24,90 @@ export default function ProductModal({
 }: ProductModalProps) {
   const { addToCart } = useCart()
   const [quantity, setQuantity] = useState(1)
+  const [variants, setVariants] = useState<any>(null)
+  const [selectedSize, setSelectedSize] = useState<string>('')
+  const [selectedColor, setSelectedColor] = useState<string>('')
+  const [selectedVariant, setSelectedVariant] = useState<any>(null)
+  const [variantPrice, setVariantPrice] = useState<number | null>(null)
+  const [loadingVariants, setLoadingVariants] = useState(false)
+
+  // Check if this is a Printful product
+  const isPrintfulProduct = product?.id?.startsWith('printful-') || false
+  const printfulProductId = isPrintfulProduct && product ? product.id.replace('printful-', '') : null
+
+  // Fetch variants when modal opens for Printful products
+  useEffect(() => {
+    if (isOpen && isPrintfulProduct && printfulProductId) {
+      setLoadingVariants(true)
+      fetch(`/api/printful/product/${printfulProductId}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.variants) {
+            setVariants(data.variants)
+            // Auto-select first size and color if available
+            if (data.variants.sizes.length > 0) {
+              setSelectedSize(data.variants.sizes[0])
+            }
+            if (data.variants.colors.length > 0) {
+              setSelectedColor(data.variants.colors[0].name)
+              // Set initial variant and price
+              const firstColorVariants = data.variants.colors[0].variants
+              if (firstColorVariants.length > 0) {
+                const firstVariant = firstColorVariants[0]
+                setSelectedVariant(firstVariant)
+                setVariantPrice(Number.parseFloat(firstVariant.retail_price || firstVariant.price || product?.price || 0))
+              }
+            }
+          }
+          setLoadingVariants(false)
+        })
+        .catch(err => {
+          console.error('Error fetching variants:', err)
+          setLoadingVariants(false)
+        })
+    } else if (!isOpen) {
+      // Reset when modal closes
+      setVariants(null)
+      setSelectedSize('')
+      setSelectedColor('')
+      setSelectedVariant(null)
+      setVariantPrice(null)
+      setQuantity(1)
+    }
+  }, [isOpen, isPrintfulProduct, printfulProductId, product])
+
+  // Update selected variant when size or color changes
+  useEffect(() => {
+    if (variants && selectedSize && selectedColor) {
+      const colorGroup = variants.colors.find((c: any) => c.name === selectedColor)
+      if (colorGroup) {
+        const matchingVariant = colorGroup.variants.find((v: any) => v.size === selectedSize)
+        if (matchingVariant) {
+          setSelectedVariant(matchingVariant)
+          setVariantPrice(Number.parseFloat(matchingVariant.retail_price || matchingVariant.price || product?.price || 0))
+        }
+      }
+    }
+  }, [selectedSize, selectedColor, variants, product])
 
   if (!product) return null
 
   const isSoldOut = product.isSoldOut || false
+  const displayPrice = variantPrice !== null ? variantPrice : product.price
 
   const handleAddToCart = () => {
     if (!isSoldOut) {
-      addToCart(product, quantity)
+      const productToAdd: Product = {
+        ...product,
+        price: displayPrice,
+        variant: selectedVariant ? {
+          variantId: selectedVariant.id,
+          size: selectedVariant.size,
+          color: selectedVariant.color || selectedColor,
+          price: displayPrice
+        } : undefined
+      }
+      addToCart(productToAdd, quantity)
       onClose()
       setQuantity(1) // Reset quantity
     }
@@ -115,10 +191,81 @@ export default function ProductModal({
                   
                   <div className="flex items-center justify-between mb-8">
                     <span className="text-3xl lg:text-4xl font-bold text-black sketchy-font">
-                      £{product.price.toFixed(2)}
+                      £{displayPrice.toFixed(2)}
                     </span>
                   </div>
                 </div>
+
+                {/* Variant Selectors for Printful Products */}
+                {isPrintfulProduct && (
+                  <div className="mb-8 space-y-4">
+                    {loadingVariants ? (
+                      <div className="text-center py-4">
+                        <div className="inline-block animate-pulse">
+                          <div className="h-8 w-32 bg-gray-300 rounded mx-auto"></div>
+                        </div>
+                      </div>
+                    ) : variants && (
+                      <>
+                        {/* Color Selector */}
+                        {variants.colors.length > 0 && (
+                          <div>
+                            <label className="block text-sm font-bold text-black mb-3 sketchy-font-alt">
+                              COLOR
+                            </label>
+                            <div className="flex flex-wrap gap-2">
+                              {variants.colors.map((colorGroup: any, index: number) => (
+                                <button
+                                  key={`color-${index}`}
+                                  onClick={() => setSelectedColor(colorGroup.name)}
+                                  className={`px-4 py-2 rounded-lg font-bold sketchy-font-alt transition-all ${
+                                    selectedColor === colorGroup.name
+                                      ? 'bg-black text-white'
+                                      : 'bg-gray-200 text-black hover:bg-gray-300'
+                                  }`}
+                                >
+                                  {colorGroup.name}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Size Selector */}
+                        {variants.sizes.length > 0 && (
+                          <div>
+                            <label className="block text-sm font-bold text-black mb-3 sketchy-font-alt">
+                              SIZE
+                            </label>
+                            <div className="flex flex-wrap gap-2">
+                              {variants.sizes.map((size: string, index: number) => {
+                                const colorGroup = variants.colors.find((c: any) => c.name === selectedColor)
+                                const hasSize = colorGroup?.variants.some((v: any) => v.size === size)
+                                
+                                return (
+                                  <button
+                                    key={`size-${index}`}
+                                    onClick={() => hasSize && setSelectedSize(size)}
+                                    disabled={!hasSize}
+                                    className={`px-4 py-2 rounded-lg font-bold sketchy-font-alt transition-all ${
+                                      selectedSize === size && hasSize
+                                        ? 'bg-black text-white'
+                                        : hasSize
+                                        ? 'bg-gray-200 text-black hover:bg-gray-300'
+                                        : 'bg-gray-100 text-gray-400 cursor-not-allowed opacity-50'
+                                    }`}
+                                  >
+                                    {size}
+                                  </button>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )}
 
                 {/* Quantity Selector */}
                 <div className="mb-8">
@@ -150,6 +297,10 @@ export default function ProductModal({
                     <div className="w-full bg-red-600 text-white font-bold py-4 px-4 rounded-lg sketchy-font-alt text-center">
                       SOLD OUT
                     </div>
+                  ) : isPrintfulProduct && (!selectedSize || !selectedColor) ? (
+                    <div className="w-full bg-gray-400 text-white font-bold py-4 px-4 rounded-lg sketchy-font-alt text-center cursor-not-allowed">
+                      SELECT SIZE & COLOR
+                    </div>
                   ) : (
                     <>
                       <button
@@ -170,7 +321,7 @@ export default function ProductModal({
                         className="flex-1 bg-gray-800 text-white font-bold py-4 px-4 rounded-lg hover:bg-gray-700 transition-all duration-300 sketchy-font-alt flex items-center justify-center gap-2 text-base whitespace-nowrap"
                       >
                         <ShoppingCart size={20} />
-                        <span>BUY NOW - £{(product.price * quantity).toFixed(2)}</span>
+                        <span>BUY NOW - £{(displayPrice * quantity).toFixed(2)}</span>
                       </button>
                     </>
                   )}
