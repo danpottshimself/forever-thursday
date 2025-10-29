@@ -88,17 +88,29 @@ export async function GET(
       const colorData = colorMap.get(color)!
       colorData.variants.push(variant)
       
-      // Collect images from variant - prioritize thumbnail_url
+      // Collect images from variant - store thumbnail_url separately for prioritization
       if (variant.thumbnail_url) {
+        // Add thumbnail_url first so it appears first when converted to array
+        const existingImages = Array.from(colorData.images)
+        colorData.images.clear()
         colorData.images.add(variant.thumbnail_url)
+        existingImages.forEach(img => {
+          if (img !== variant.thumbnail_url) {
+            colorData.images.add(img)
+          }
+        })
       }
       if (variant.files && Array.isArray(variant.files)) {
         variant.files.forEach((file: any) => {
-          if (file.preview_url) colorData.images.add(file.preview_url)
-          if (file.url) colorData.images.add(file.url)
+          if (file.preview_url && file.preview_url !== variant.thumbnail_url) {
+            colorData.images.add(file.preview_url)
+          }
+          if (file.url && file.url !== variant.thumbnail_url) {
+            colorData.images.add(file.url)
+          }
         })
       }
-      if (variant.image) {
+      if (variant.image && variant.image !== variant.thumbnail_url) {
         colorData.images.add(variant.image)
       }
     })
@@ -111,11 +123,25 @@ export async function GET(
       return a.localeCompare(b)
     })
 
-    organizedVariants.colors = Array.from(colorMap.entries()).map(([name, data]) => ({
-      name,
-      variants: data.variants,
-      images: Array.from(data.images)
-    }))
+    organizedVariants.colors = Array.from(colorMap.entries()).map(([name, data]) => {
+      // Convert Set to Array and prioritize thumbnail_urls
+      const allImages = Array.from(data.images)
+      const thumbnailUrls = allImages.filter(img => 
+        typeof img === 'string' && (
+          img.includes('thumbnail') || 
+          img.includes('/thumb') || 
+          img.includes('_thumb')
+        )
+      )
+      const otherImages = allImages.filter(img => !thumbnailUrls.includes(img))
+      
+      // Return thumbnails first, then other images
+      return {
+        name,
+        variants: data.variants,
+        images: [...thumbnailUrls, ...otherImages]
+      }
+    })
 
     // Also include product-level images - prioritize thumbnail_url
     const productImages: string[] = []

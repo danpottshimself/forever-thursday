@@ -40,6 +40,7 @@ export default function ProductModal({
   const [isDragging, setIsDragging] = useState(false)
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
   const [clickStart, setClickStart] = useState({ x: 0, y: 0, time: 0 })
+  const [hasMoved, setHasMoved] = useState(false)
 
   // Check if this is a Printful product
   const isPrintfulProduct = product?.id?.startsWith('printful-') || false
@@ -73,15 +74,35 @@ export default function ProductModal({
             if (data.variants.colors.length > 0) {
               const firstColor = data.variants.colors[0].name
               setSelectedColor(firstColor)
-              // Set initial image from first color - prefer thumbnail
-              const firstColorImages = data.variants.colors[0].images || []
-              if (firstColorImages.length > 0) {
-                // Use first image (should be thumbnail_url if prioritized correctly)
-                setDisplayImage(firstColorImages[0])
-              } else if (data.images && data.images.length > 0) {
-                setDisplayImage(data.images[0])
+              // Set initial image from first color - prefer thumbnail from variant
+              const firstColorGroup = data.variants.colors[0]
+              let thumbnailUrl = null
+              if (firstColorGroup.variants && firstColorGroup.variants.length > 0) {
+                const variantWithThumbnail = firstColorGroup.variants.find((v: any) => v.thumbnail_url)
+                if (variantWithThumbnail) {
+                  thumbnailUrl = variantWithThumbnail.thumbnail_url
+                }
+              }
+              
+              if (thumbnailUrl) {
+                setDisplayImage(thumbnailUrl)
               } else {
-                setDisplayImage(product?.image || '')
+                const firstColorImages = firstColorGroup.images || []
+                if (firstColorImages.length > 0) {
+                  // Check for thumbnail in images array
+                  const thumbnailImg = firstColorImages.find((img: string) => 
+                    typeof img === 'string' && (
+                      img.includes('thumbnail') || 
+                      img.includes('/thumb') || 
+                      img.includes('_thumb')
+                    )
+                  )
+                  setDisplayImage(thumbnailImg || firstColorImages[0])
+                } else if (data.images && data.images.length > 0) {
+                  setDisplayImage(data.images[0])
+                } else {
+                  setDisplayImage(product?.image || '')
+                }
               }
               // Set initial variant and price
               const firstColorVariants = data.variants.colors[0].variants
@@ -130,14 +151,37 @@ export default function ProductModal({
     if (variants && selectedColor) {
       const colorGroup = variants.colors.find((c: any) => c.name === selectedColor)
       if (colorGroup) {
-        // Update image for selected color - prefer thumbnail (first image should be thumbnail)
-        const colorImages = colorGroup.images || []
-        if (colorImages.length > 0) {
-          setDisplayImage(colorImages[0])
-        } else if (productImages.length > 0) {
-          setDisplayImage(productImages[0])
+        // Update image for selected color - prefer thumbnail
+        // Try to find thumbnail_url from variants first
+        let thumbnailUrl = null
+        if (colorGroup.variants && colorGroup.variants.length > 0) {
+          const variantWithThumbnail = colorGroup.variants.find((v: any) => v.thumbnail_url)
+          if (variantWithThumbnail) {
+            thumbnailUrl = variantWithThumbnail.thumbnail_url
+          }
+        }
+        
+        // Use thumbnail_url if found, otherwise use first image from images array
+        if (thumbnailUrl) {
+          setDisplayImage(thumbnailUrl)
         } else {
-          setDisplayImage(product?.image || '')
+          const colorImages = colorGroup.images || []
+          if (colorImages.length > 0) {
+            // Check if first image is a thumbnail
+            const firstImage = colorImages[0]
+            const isThumbnail = typeof firstImage === 'string' && (
+              firstImage.includes('thumbnail') || 
+              firstImage.includes('/thumb') || 
+              firstImage.includes('_thumb')
+            )
+            setDisplayImage(isThumbnail ? firstImage : (colorImages.find((img: string) => 
+              img.includes('thumbnail') || img.includes('/thumb') || img.includes('_thumb')
+            ) || firstImage))
+          } else if (productImages.length > 0) {
+            setDisplayImage(productImages[0])
+          } else {
+            setDisplayImage(product?.image || '')
+          }
         }
         // Reset zoom when color changes
         setIsZoomed(false)
@@ -193,24 +237,41 @@ export default function ProductModal({
     setQuantity(prev => Math.max(prev - 1, 1)) // Min 1
   }
 
+  const handleZoomOut = () => {
+    setIsZoomed(false)
+    setZoomScale(1)
+    setPanX(0)
+    setPanY(0)
+  }
+
   const handleMouseDown = (e: React.MouseEvent) => {
     e.preventDefault()
     setClickStart({ x: e.clientX, y: e.clientY, time: Date.now() })
+    setHasMoved(false)
     if (isZoomed) {
-      setIsDragging(true)
+      // Don't set isDragging yet - wait for movement
       setDragStart({ x: e.clientX - panX, y: e.clientY - panY })
     }
   }
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (isZoomed && isDragging) {
-      setPanX(e.clientX - dragStart.x)
-      setPanY(e.clientY - dragStart.y)
+    if (isZoomed) {
+      const moveDistance = Math.sqrt(
+        Math.pow(e.clientX - clickStart.x, 2) + Math.pow(e.clientY - clickStart.y, 2)
+      )
+      
+      // Only start dragging if mouse has moved more than 5px
+      if (moveDistance > 5) {
+        setHasMoved(true)
+        setIsDragging(true)
+        setPanX(e.clientX - dragStart.x)
+        setPanY(e.clientY - dragStart.y)
+      }
     }
   }
 
   const handleMouseUp = (e: React.MouseEvent) => {
-    if (!isZoomed && !isDragging) {
+    if (!isZoomed) {
       // Check if this was a click (not a drag)
       const moveDistance = Math.sqrt(
         Math.pow(e.clientX - clickStart.x, 2) + Math.pow(e.clientY - clickStart.y, 2)
@@ -218,50 +279,56 @@ export default function ProductModal({
       const timeElapsed = Date.now() - clickStart.time
       
       if (moveDistance < 5 && timeElapsed < 300) {
-        // It's a click - toggle zoom
+        // It's a click - zoom in
         setIsZoomed(true)
         setZoomScale(2.5)
         setPanX(0)
         setPanY(0)
       }
-    } else if (isZoomed && !isDragging) {
-      // Click when zoomed - zoom out
+    } else if (isZoomed && !hasMoved) {
+      // Click when zoomed without moving - zoom out
       const moveDistance = Math.sqrt(
         Math.pow(e.clientX - clickStart.x, 2) + Math.pow(e.clientY - clickStart.y, 2)
       )
       const timeElapsed = Date.now() - clickStart.time
       
       if (moveDistance < 5 && timeElapsed < 300) {
-        setIsZoomed(false)
-        setZoomScale(1)
-        setPanX(0)
-        setPanY(0)
+        handleZoomOut()
       }
     }
     setIsDragging(false)
+    setHasMoved(false)
   }
 
   const handleTouchStart = (e: React.TouchEvent) => {
     if (e.touches.length === 1) {
       const touch = e.touches[0]
       setClickStart({ x: touch.clientX, y: touch.clientY, time: Date.now() })
+      setHasMoved(false)
       if (isZoomed) {
-        setIsDragging(true)
         setDragStart({ x: touch.clientX - panX, y: touch.clientY - panY })
       }
     }
   }
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (isZoomed && isDragging && e.touches.length === 1) {
+    if (isZoomed && e.touches.length === 1) {
       const touch = e.touches[0]
-      setPanX(touch.clientX - dragStart.x)
-      setPanY(touch.clientY - dragStart.y)
+      const moveDistance = Math.sqrt(
+        Math.pow(touch.clientX - clickStart.x, 2) + Math.pow(touch.clientY - clickStart.y, 2)
+      )
+      
+      if (moveDistance > 10) {
+        setHasMoved(true)
+        setIsDragging(true)
+        setPanX(touch.clientX - dragStart.x)
+        setPanY(touch.clientY - dragStart.y)
+      }
     }
   }
 
   const handleTouchEnd = (e: React.TouchEvent) => {
-    if (!isZoomed && !isDragging && e.changedTouches.length === 1) {
+    if (!isZoomed && e.changedTouches.length === 1) {
       // Check if this was a tap (not a swipe)
       const touch = e.changedTouches[0]
       const moveDistance = Math.sqrt(
@@ -270,14 +337,14 @@ export default function ProductModal({
       const timeElapsed = Date.now() - clickStart.time
       
       if (moveDistance < 10 && timeElapsed < 300) {
-        // It's a tap - toggle zoom
+        // It's a tap - zoom in
         setIsZoomed(true)
         setZoomScale(2.5)
         setPanX(0)
         setPanY(0)
       }
-    } else if (isZoomed && !isDragging && e.changedTouches.length === 1) {
-      // Tap when zoomed - zoom out
+    } else if (isZoomed && !hasMoved && e.changedTouches.length === 1) {
+      // Tap when zoomed without moving - zoom out
       const touch = e.changedTouches[0]
       const moveDistance = Math.sqrt(
         Math.pow(touch.clientX - clickStart.x, 2) + Math.pow(touch.clientY - clickStart.y, 2)
@@ -285,13 +352,11 @@ export default function ProductModal({
       const timeElapsed = Date.now() - clickStart.time
       
       if (moveDistance < 10 && timeElapsed < 300) {
-        setIsZoomed(false)
-        setZoomScale(1)
-        setPanX(0)
-        setPanY(0)
+        handleZoomOut()
       }
     }
     setIsDragging(false)
+    setHasMoved(false)
   }
 
   return (
@@ -323,7 +388,7 @@ export default function ProductModal({
               {/* Product Image with Zoom */}
               <div 
                 className="relative h-64 md:h-full bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden"
-                style={{ cursor: isZoomed ? (isDragging ? 'grabbing' : 'grab') : 'zoom-in' }}
+                style={{ cursor: isZoomed ? (isDragging ? 'grabbing' : 'zoom-out') : 'zoom-in' }}
                 onMouseDown={handleMouseDown}
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUp}
@@ -353,21 +418,27 @@ export default function ProductModal({
                   </motion.div>
                 </div>
 
-                {/* Zoom Indicator */}
+                {/* Zoom Controls */}
                 {isMounted && (
-                  <div className="absolute top-4 right-4 px-3 py-1 bg-black/50 rounded-full text-white text-sm font-bold sketchy-font-alt z-10 flex items-center gap-2">
+                  <>
                     {isZoomed ? (
-                      <>
-                        <ZoomOut size={14} />
-                        <span>Click to zoom out</span>
-                      </>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleZoomOut()
+                        }}
+                        className="absolute top-4 right-4 px-3 py-2 bg-black/70 hover:bg-black rounded-full text-white text-sm font-bold sketchy-font-alt z-20 flex items-center gap-2 transition-colors"
+                      >
+                        <ZoomOut size={16} />
+                        <span>Zoom Out</span>
+                      </button>
                     ) : (
-                      <>
+                      <div className="absolute top-4 right-4 px-3 py-1 bg-black/50 rounded-full text-white text-sm font-bold sketchy-font-alt z-10 flex items-center gap-2">
                         <ZoomIn size={14} />
                         <span>Click to zoom</span>
-                      </>
+                      </div>
                     )}
-                  </div>
+                  </>
                 )}
 
                 {/* Favorite Button */}
